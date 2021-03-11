@@ -1,0 +1,10 @@
+.icon {
+  background: url("../../imgs/plus-button.png") no-repeat;
+  float: left;
+  width: 10px;
+  height: 40px;
+}
+
+.MenuItem.Mui-focusVisible {
+    background-color: rgb(0 0 0 / 38%)!important;
+}

@@ -1,0 +1,8 @@
+.length-width {
+  display: flex;
+  justify-content: space-evenly;
+}
+
+.length-width > * {
+  width: 3em;
+}

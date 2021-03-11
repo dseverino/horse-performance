@@ -1,0 +1,13 @@
+.claiming-dropdown.p-dropdown {
+    width: 230px;
+}
+
+.container-dialog {
+    width: 600px;
+    
+}
+
+.container-dialog > * {        
+    width: 26ch;
+    margin: 1em !important;
+}

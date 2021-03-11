@@ -1,0 +1,133 @@
+.main-navigation {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 3.5rem;
+    background: #5101d1;
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+  }
+
+  .cdm-header {
+    border-bottom: 1px solid #CCCCCC;
+    background-color: #FFFFFF;
+  }
+  
+  .main-navigation__logo h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #dfcefc;
+  }
+  
+  .main-navigation__items {
+    margin-left: 1.5rem;
+  }
+
+  .main-navigation__items ul {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    align-items: center;
+  }
+  
+  .main-navigation__items li {
+    margin: 0 1rem;
+  }
+  
+  .main-navigation__items a,
+  .main-navigation__items button {
+    text-decoration: none;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border: none;
+    font: inherit;
+    background: transparent;
+    cursor: pointer;
+    vertical-align: middle;
+    margin: 0;
+  }
+  
+  .main-navigation__items a:hover,
+  .main-navigation__items a:active,
+  .main-navigation__items a.active,
+  .main-navigation__items button:hover,
+  .main-navigation__items button:active {
+    background: #ffffff;
+    color: #5101d1;
+    border-radius: 5px;
+  }
+
+  .cdm-header-title {
+    /*font-family: 'vzApexBook';*/
+    font-size: 13px;
+    color: #000;
+    font-weight: normal;
+    padding-left: 190px;
+    margin-left: 40px;
+    margin-bottom: 0;
+  }
+  .dropbtn{
+    margin-bottom: -16px;
+    text-align: center;
+    cursor: pointer;
+  }
+  .dropdown-content {
+    visibility: hidden;
+    position: absolute;
+    background-color: #f9f9f9;
+    /*min-width: 160px;*/
+    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+    z-index: 5;
+    padding: 10px;
+    border-radius: 6px;
+    font-family: Arial, Helvetica, sans-serif;
+    opacity: 0;
+    transition: all 0.4s ease-in-out;
+    margin-top: 2px;
+    min-width: 200px;
+  }
+  
+  .dropdown:hover .dropdown-content{
+    visibility: visible;
+    opacity: 1;
+  }
+  
+  .dropdown-content .menu-title{
+    margin-bottom: 10px;
+    border-bottom: 1px solid #AF0000;
+  }
+  
+  .dropdown-content a {
+    display: block;
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 14px;
+    margin: 0;
+    text-shadow: none;
+    text-transform: none;
+    color: rgb(139, 131, 131);
+    padding: 5px 7px;
+    white-space:nowrap;
+  }
+  
+  .dropdown-content a:hover {
+    background: lightgray;
+    color: black;
+    text-decoration: none;
+    border-radius: 3px;
+  
+    transition: color 1s;
+  }
+
+  @media (min-width: 1px){
+    .navbar-nav {
+      float: left;
+      margin: 0;
+      display: inline-flex;
+    }
+  }

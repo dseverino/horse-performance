@@ -1,0 +1,16 @@
+.comments {  
+  border: 1px solid #a6a6a6;
+  border-radius: 3px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-size: 14px;
+}
+
+.comments:focus{
+  outline: 0 none;
+  outline-offset: 0;
+  box-shadow: 0 0 0 0.2em #8dcdff;
+}
+
+.comments:hover{
+  border-color: #212121 !important;
+}

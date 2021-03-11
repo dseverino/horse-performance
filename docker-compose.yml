@@ -1,0 +1,35 @@
+version: "3.8"
+services: 
+  client:
+    container_name: client
+    build: 
+      context: ./client
+    volumes: 
+      - /app/node_modules
+      - ./client:/app
+  api:
+    container_name: api
+    build: 
+      context: ./api
+    volumes: 
+      - /app/node_modules
+      - ./api:/app
+  mongo:
+    container_name: mongocontainer
+    image: mongo
+    ports: 
+      - "27018:27017"
+    volumes:
+      - mongodata:/data/db
+  nginx:
+    depends_on:
+      - api
+      - client
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./nginx
+    ports:
+    - '3050:80'
+volumes: 
+  mongodata:
+    name: mongodata
