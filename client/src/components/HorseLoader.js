@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useContext } from 'react';
+
 import {
   TextField,
   DialogTitle,
@@ -35,7 +36,7 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-export default function HorseLoader(props) {
+const HorseLoader = (props) => {
   const formRef = useRef(null);
   const authContext = useContext(AuthContext);
   const [horse, setHorse] = useState(props.horse)
@@ -86,10 +87,10 @@ export default function HorseLoader(props) {
     handleClose();
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     let active = true;
 
-    if (!horse || horse.name.length != 4) {
+    if (!horse || horse.name.length != 4) {      
       return undefined;
     }
 
@@ -107,7 +108,7 @@ export default function HorseLoader(props) {
     };
   }, [open && horse && horse.name.length]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!open) {
       setOptions([]);
     }
@@ -130,6 +131,7 @@ export default function HorseLoader(props) {
         style={{ width: 300 }}
         open={open}
         value={name}
+        onFocus={(e) => e.target.select()}
         onOpen={() => {
           setOpen(true);
         }}
@@ -333,3 +335,5 @@ export default function HorseLoader(props) {
     </React.Fragment>
   );
 }
+
+export default HorseLoader;

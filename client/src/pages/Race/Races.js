@@ -5,6 +5,10 @@ import Spinner from "../../components/Spinner/Spinner";
 import { AuthContext } from "../../context/auth-context";
 
 import { Calendar } from 'primereact/calendar';
+import { Dialog } from 'primereact/dialog';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
+
 import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
 import Paper from '@material-ui/core/Paper';
@@ -350,7 +354,8 @@ class Races extends Component {
           this.setState({ races: resData.data.singleProgram.races, exist: true, isLoading: false });
         }
         else {
-          this.setState({ isLoading: false });
+          //this.setState({ isLoading: false });
+          this.props.history.push("/createprogram")
         }
       })
       .catch(error => {
@@ -358,7 +363,7 @@ class Races extends Component {
       })
   }
 
-  addHorseToRace = (raceIndex, raceId, selectedHorse) => {
+  addHorseToRace = async (raceIndex, raceId, selectedHorse) => {
     this.setState({ isLoading: true });
     const requestBody = {
       query: `
@@ -494,6 +499,7 @@ class Races extends Component {
           return { ...prevState, races: races, isLoading: false }
         })
         this.setState({ isLoading: false })
+        return resData
       })
       .catch(error => {
         console.log(error)
@@ -561,7 +567,6 @@ class Races extends Component {
           onAddHorseToRace={this.onAddHorseToRace}
           openRaceDetailsDialog={() => this.setState({ displayRaceDetailsDialog: true, currentRaceSelected: race })}
           openHorseRaceDetails={() => this.setState({ displayHorseRaceDetailsDialog: true, currentRaceSelected: race })}
-
         //addHorseDialog={this.addDialog}
         />
       )
@@ -577,7 +582,7 @@ class Races extends Component {
               id="date"
               value={this.state.programDate}
               onChange={this.onProgramDateChange}
-            />            
+            />
           </div>
         </div>
         {
@@ -652,6 +657,7 @@ class Races extends Component {
             />
           )
         }
+
       </React.Fragment>
     );
   }

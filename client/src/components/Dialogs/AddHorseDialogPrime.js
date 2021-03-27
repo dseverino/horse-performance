@@ -1,26 +1,25 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 
 import "./AddHorseDialogPrime.css";
 
 import Backdrop from "../Backdrop/Backdrop";
 import Spinner from "../Spinner/Spinner";
-import SnackbarSuccess from "../SnackBar/SnackBarSuccess";
-import CreateHorseDialog from "../Dialogs/CreateHorseDialog";
-import CreateJockeyPage from "../../pages/Jockey/CreateJockey";
 import { AuthContext } from "../../context/auth-context";
 import FreeSoloCreateOptionDialog from './test';
-import { saveJockey, saveStable, saveTrainer } from '../../services/Services';
+import { loadHorses, saveJockey, saveStable, saveTrainer } from '../../services/Services';
 import HorseLoader from "../HorseLoader";
 
 import { Fieldset } from 'primereact/fieldset';
 import { Dialog } from 'primereact/dialog'
+import { Toast } from 'primereact/toast';
+
+import * as XLSX from 'xlsx';
 
 import {
   FormLabel,
   FormGroup,
   FormControlLabel,
   Checkbox,
-  Input,
   InputLabel,
   DialogContent,
   DialogActions,
@@ -28,18 +27,11 @@ import {
   Button,
   Select,
   MenuItem,
-  FormControl,  
-  Chip,
-  useTheme,
-  makeStyles
+  FormControl,
+  makeStyles,
+  IconButton
 } from '@material-ui/core';
 
-function getStyles(name, personName, theme) {
-  return {
-    fontWeight: personName.indexOf(name) === -1 ? theme.typography.fontWeightRegular : 900,
-    
-  };
-}
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -52,7 +44,7 @@ const useStyles = makeStyles((theme) => ({
 
 const AddHorseDialogPrime = (props) => {
   const classes = useStyles();
-  const theme = useTheme();
+  const toast = useRef(null);
   const authContext = useContext(AuthContext);
 
   const { onClose, open, visible, onHorseAdded, raceSelected, ...other } = props;
@@ -61,27 +53,19 @@ const AddHorseDialogPrime = (props) => {
     return { name: jockey.name, value: jockey._id }
   });
 
-  const [horseNotFound, setHorseNotFound] = React.useState(false);
-  const [openCreateJockey, setOpenCreateJockey] = React.useState(false);
   const [autoCompleteValues, setAutoCompleteValues] = useState({
     stable: { name: '', value: '' },
     trainer: { name: '', value: '' },
     jockey: { name: '', value: '' }
   })
 
-  const [values, setValues] = React.useState({
-    selectedHorse: null,
-    selectedStable: { _id: "" }
-  });
-
-  const [openHorseDialog, setOpenHorseDialog] = React.useState(false);
+  const [selectedHorse, setSelectedHorse] = React.useState({ name: '', stable: { name: '' } });
 
   const [horseRaceDetail, setHorseRaceDetail] = React.useState({
     claiming: "",
     date: props.date,
     discarded: false,
     distance: raceSelected.distance,
-    finishTime: "",
     horseAge: 0,
     horseEquipments: ["E", "F"],
     horseMedications: ["B"],
@@ -93,9 +77,9 @@ const AddHorseDialogPrime = (props) => {
     raceNumber: raceSelected.event,
     stable: "",
     startingPosition: horsesqty,
-    trainer: ""
+    trainer: "",
+    finishTime: '0'
   });
-
 
   const [horse, setHorse] = React.useState({ name: "", age: 2, color: "Z", sex: "M", stable: "", sire: "", dam: "", weight: "", procedence: "native" });
 
@@ -121,14 +105,14 @@ const AddHorseDialogPrime = (props) => {
 
   function clearValues() {
     setHorse({ name: "", age: 2, color: "Z", sex: "M", stable: "", sire: "", dam: "", weight: "", procedence: "native" })
-    setValues({ selectedHorse: null, E: true, F: true, G: false, Gs: false, LA: false, B: true, L: false })
+    setSelectedHorse({ name: '', stable: { name: '' }, saveHorse: false })
     setHorseRaceDetail(prevState => (
       {
         claiming: "",
         date: props.date,
         discarded: false,
         distance: raceSelected.distance,
-        finishTime: "",
+        finishTime: "0",
         horseAge: 0,
         horseEquipments: ["E", "F"],
         horseMedications: ["B"],
@@ -157,7 +141,7 @@ const AddHorseDialogPrime = (props) => {
         }          
       `,
       variables: {
-        horseRaceDetail: horseRaceDetail, horseId: values.selectedHorse._id
+        horseRaceDetail: horseRaceDetail, horseId: selectedHorse._id
       }
     }
 
@@ -175,10 +159,13 @@ const AddHorseDialogPrime = (props) => {
         return result.json()
       })
       .then(resData => {
-        setLoading(false);
-        onHorseAdded(props.index, raceSelected._id, values.selectedHorse);
-        clearValues()
-        //props.onClose()
+
+        onHorseAdded(props.index, raceSelected._id, selectedHorse).then((data) => {
+          setLoading(false);
+          clearValues()
+          toast.current.show({ severity: 'success', summary: 'Horse added', detail: 'Horse added to race', life: 3000 });
+        })
+                //props.onClose()
       })
       .catch(error => {
         console.log(error)
@@ -194,7 +181,7 @@ const AddHorseDialogPrime = (props) => {
     var eqp = ["E", "F"];
     var medic = ["B"];
     var jockey = ""
-    var jockeySelected = {name: '', value: ''}
+    var jockeySelected = { name: '', value: '' }
     var details = horse.raceDetails;
 
     if (details && details.length === 1) {
@@ -216,7 +203,7 @@ const AddHorseDialogPrime = (props) => {
       stable: { name: horse.stable.name, value: horse.stable._id },
       trainer: { name: horse.stable.trainers[0]?.name || '', value: horse.stable.trainers[0]?._id || '' }
     });
-    setValues({ ...values, "selectedHorse": horse });
+    setSelectedHorse({ ...horse });
   }
 
 
@@ -243,21 +230,6 @@ const AddHorseDialogPrime = (props) => {
     setHorseRaceDetail({ ...horseRaceDetail, "horseWeight": Number(e.target.value) || 0 });
   }
 
-
-  function savedHorse(horse) {
-    setSaved(true);
-    setOpenHorseDialog(false);
-    setHorse({ name: "", age: 2, color: "Z", sex: "M", stable: "", sire: "", dam: "", weight: "", procedence: "native" })
-    setValues({ ...values, selectedHorse: horse, selectedStable: "" });
-    setHorseRaceDetail({ ...horseRaceDetail, horseWeight: horse.weight, horseAge: horse.age, stable: horse.stable._id, trainer: horse.stable.trainers && horse.stable.trainers.length === 1 ? horse.stable.trainers[0]._id : "", claiming: raceSelected.claimings.length === 1 ? raceSelected.claimings[0] : "" });
-  }
-
-
-  function onHorseNotFoundSnackBarClose() {
-    setHorseNotFound(false);
-    setOpenHorseDialog(true);
-  }
-
   async function savedStable(name) {
     setLoading(true);
     const stable = await saveStable(name)
@@ -276,7 +248,7 @@ const AddHorseDialogPrime = (props) => {
     const jockey = await saveJockey(name)
     setLoading(false);
     if (jockey) {
-      setHorse({ ...horse, jockey: jockey._id });
+      //setHorse({ ...horse, jockey: jockey._id });
       authContext.addJockey(jockey);
       setAutoCompleteValues({ ...autoCompleteValues, jockey: { name: jockey.name, value: jockey._id } });
       setHorseRaceDetail({ ...horseRaceDetail, jockey: jockey._id })
@@ -288,8 +260,8 @@ const AddHorseDialogPrime = (props) => {
     const trainer = await saveTrainer(name)
     setLoading(false);
     if (trainer) {
-      setHorse({ ...horse, trainer: trainer._id });
-      authContext.addTrainery(trainer);
+      //setHorse({ ...horse, trainer: trainer._id });
+      authContext.addTrainer(trainer);
       setAutoCompleteValues({ ...autoCompleteValues, trainer: { name: trainer.name, value: trainer._id } });
       setHorseRaceDetail({ ...horseRaceDetail, trainer: trainer._id })
     }
@@ -306,6 +278,122 @@ const AddHorseDialogPrime = (props) => {
     },
   };
 
+
+  let horsesLoaded = useRef([])
+  let horseObject = useRef({});
+  let horseReady = false
+
+  useEffect(() => {
+    console.log('insside useEffect')
+    if (horseObject.current.saveHorse) {
+      console.log(horseRaceDetail)
+      console.log(selectedHorse)
+      handleAdd();
+    }
+    else if (!!horsesLoaded.current.length) {
+      console.log('next one')
+      console.log('after save')
+      console.log(horsesLoaded.current)
+      saveFileHorses();
+    }
+  }, [horseRaceDetail.horseAge, selectedHorse._id])
+
+
+  const readExcel = async (file) => {
+    const promise = new Promise((res, rej) => {
+      const fileReader = new FileReader();
+      fileReader.readAsArrayBuffer(file);
+
+      fileReader.onload = (e) => {
+        const bufferArray = e.target.result;
+        const wb = XLSX.read(bufferArray, { type: 'buffer' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+        res(data);
+      }
+      fileReader.onerror = (error) => {
+        rej(error);
+      }
+    });
+
+    promise.then((horseList) => {
+      horsesLoaded.current = horseList;
+      if (horseList.length) {
+        saveFileHorses()
+      }
+    })
+  }
+
+  const saveFileHorses = () => {
+    horseObject.current = horsesLoaded.current.splice(0, 1)[0];
+    console.log(horseObject.current)
+    loadHorses(horseObject.current.name).then(res => {
+      return res.json()
+    })
+      .then(data => {
+        const horses = data.data.horse;
+        if (horses.length) {
+          horseObject.current._id = horses[0]._id;
+          horseObject.current.age = horses[0].age;
+          horseObject.current.name = horses[0].name;
+          verifyStable()
+        }
+      })
+  }
+
+  const verifyStable = () => {
+    const st = stables.find(st => {
+      return st.name.toLowerCase().includes(horseObject.current.stable.toLowerCase())
+    })
+    if (st) {
+      horseObject.current.stable = st.value
+      verifyTrainer()
+    }
+    else {
+
+    }
+  }
+
+  const verifyTrainer = () => {
+    const tr = trainers.find(tr => {
+      return tr.name.toLowerCase().includes(horseObject.current.trainer.toLowerCase())
+    })
+    if (tr) {
+      horseObject.current.trainer = tr.value
+      verifyJockey()
+    }
+    else {
+
+    }
+  }
+
+  const verifyJockey = () => {
+    const jo = jockeys.find(jo => {
+      return jo.name.toLowerCase().includes(horseObject.current.jockey.toLowerCase())
+    })
+    if (jo) {
+      setHorseRaceDetail({
+        ...horseRaceDetail,
+        horseAge: horseObject.current.age,
+        stable: horseObject.current.stable,
+        trainer: horseObject.current.trainer,
+        claiming: horseObject.current.claiming,
+        horseWeight: horseObject.current.weight,
+        horseEquipments: horseObject.current.equipments?.split(',') || [],
+        horseMedications: horseObject.current.medications?.split(',') || [],
+        jockey: jo.value,
+        jockeyWeight: horseObject.current.jockeyWeight
+      })
+
+      setSelectedHorse({ ...horseObject.current });
+      horseObject.current.saveHorse = true;
+    }
+    else {
+
+    }
+  }
+
   return (
     <React.Fragment>
       {/* Add Horse Dialog*/}
@@ -313,29 +401,36 @@ const AddHorseDialogPrime = (props) => {
         {...other}
         visible={visible}
         onHide={handleCancel}
-        
       >
 
         <DialogContent dividers>
-          <HorseLoader onHorseSelected={onHorseSelected} horse={horse} load={(val) => setLoading(val)} />
+          <div className="d-flex">
+            <HorseLoader onHorseSelected={onHorseSelected} horse={horse} load={(val) => setLoading(val)} />
+            <input onChange={(e) => readExcel(e.target.files[0])} accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style={{ display: 'none' }} id="icon-button-file" type="file" />
+            <label htmlFor="icon-button-file">
+              <IconButton component="span" > <i className="pi pi-file-excel" style={{ 'fontSize': '1em' }}></i></IconButton>
+            </label>
+          </div>
+
           <div>
             {
-              values.selectedHorse &&
+              selectedHorse.name &&
               <React.Fragment>
                 <div style={{ display: "flex", margin: "10px", justifyContent: "space-between" }}>
-                  <div><strong>{values.selectedHorse.name}</strong> Position <strong>{horsesqty}</strong></div>
-                  <div>{values.selectedHorse.age} - {values.selectedHorse.color} - {values.selectedHorse.sex}</div>
-                  <div>{values.selectedHorse.stable.name}</div>
+                  <div><strong>{selectedHorse.name}</strong> Position <strong>{horsesqty}</strong></div>
+                  <div>{selectedHorse.age} - {selectedHorse.color} - {selectedHorse.sex}</div>
+                  <div>{selectedHorse.stable.name}</div>
                 </div>
                 <Fieldset legend="Race Details">
-                  <div className={classes.root} style={{maxWidth: '550px'}}>                    
+
+                  <div className={classes.root} style={{ maxWidth: '550px' }}>
 
                     <FormControl>
                       <FreeSoloCreateOptionDialog
                         options={stables}
                         title="Stable"
                         value={autoCompleteValues.stable}
-                        onChange={(id) => setHorseRaceDetail({ ...horseRaceDetail, stable: id })}
+                        onChange={(id, ref) => setHorseRaceDetail({ ...horseRaceDetail, stable: id })}
                         onCreate={savedStable}
                       />
                     </FormControl>
@@ -351,44 +446,37 @@ const AddHorseDialogPrime = (props) => {
                     </FormControl>
 
                     <FormControl>
-                      <InputLabel id="equip-chip-label">Equipments</InputLabel>
-                      <Select
-                        labelId="equip-chip-label"
-                        id="equip-mutiple-chip"
-                        multiple
-                        value={horseRaceDetail.horseEquipments}
-                        onChange={(e) => setHorseRaceDetail({ ...horseRaceDetail, horseEquipments: e.target.value })}
-                        input={<Input id="select-multiple-chip" />}
-                        renderValue={(selected) => (
-                          <div>
-                            {selected.map((value) => (
-                              <Chip key={value} label={value} />
-                            ))}
-                          </div>
-                        )}
-                        MenuProps={MenuProps}
-                      >
-                        {['E', 'F', 'G', 'Gs', 'LA'].map((name) => (
-                          <MenuItem
-                            key={name}
-                            value={name}                            
-                            style={getStyles(name, horseRaceDetail.horseEquipments, theme)}
-                            className="MenuItem"
-                          >
-                            {name}
-                          </MenuItem>
-                        ))}
-                      </Select>
+                      <FormLabel component="legend">Equipments</FormLabel>
+                      <FormGroup style={{ flexDirection: "row" }}>
+                        {
+                          ['E', 'F', 'G', 'Gs', 'LA'].map((name) => (
+                            <FormControlLabel
+                              key={name}
+                              label={name}
+                              value={name}
+                              labelPlacement="top"
+                              style={{ margin: '0px 0px' }}
+                              control={<Checkbox checked={horseRaceDetail.horseEquipments.includes(name)}
+                                onChange={onEquipMedicationChange(name, "horseEquipments")}
+                              />}
+                            />
+                          ))
+                        }
+                      </FormGroup>
                     </FormControl>
 
                     <FormControl>
                       <FormLabel component="legend">Medications</FormLabel>
                       <FormGroup style={{ flexDirection: "row" }}>
                         <FormControlLabel
+                          labelPlacement="top"
+                          style={{ margin: '0px 0px' }}
                           control={<Checkbox checked={horseRaceDetail.horseMedications.indexOf("L") > -1} onChange={onEquipMedicationChange("L", "horseMedications")} value="L" />}
                           label="L"
                         />
                         <FormControlLabel
+                          labelPlacement="top"
+                          style={{ margin: '0px 0px' }}
                           control={<Checkbox checked={horseRaceDetail.horseMedications.indexOf("B") > -1} onChange={onEquipMedicationChange("B", "horseMedications")} value="B" />}
                           label="B"
                         />
@@ -405,18 +493,6 @@ const AddHorseDialogPrime = (props) => {
                       />
                     </FormControl>
 
-                    <TextField name="jockeyweight"
-                      label="Jockey Weight" type="number" 
-                      onChange={e => setHorseRaceDetail({ ...horseRaceDetail, "jockeyWeight": Number(e.target.value) }) } 
-                      keyfilter="pint" value={horseRaceDetail.jockeyWeight} 
-                      margin="normal" variant="outlined"
-                    />
-
-                    <TextField
-                      name="weight" onFocus={(e) => e.target.select()}
-                      label="Weight" type="number" onChange={onHorseWeightChange} keyfilter="pint" value={horseRaceDetail.horseWeight} margin="normal" variant="outlined"
-                    />
-
                     <FormControl>
                       <InputLabel id="claiming-label">Claiming</InputLabel>
                       <Select
@@ -432,7 +508,19 @@ const AddHorseDialogPrime = (props) => {
                           })
                         }
                       </Select>
-                    </FormControl>    
+                    </FormControl>
+
+                    <TextField name="jockeyweight"
+                      label="Jockey Weight" type="number"
+                      onChange={e => setHorseRaceDetail({ ...horseRaceDetail, "jockeyWeight": Number(e.target.value) })}
+                      keyfilter="pint" value={horseRaceDetail.jockeyWeight}
+                      margin="normal" variant="outlined"
+                    />
+
+                    <TextField
+                      name="weight" onFocus={(e) => e.target.select()}
+                      label="Weight" type="number" onChange={onHorseWeightChange} keyfilter="pint" value={horseRaceDetail.horseWeight} margin="normal" variant="outlined"
+                    />
 
                     <FormControlLabel
                       control={<Checkbox checked={horseRaceDetail.discarded} onChange={e => setHorseRaceDetail({ ...horseRaceDetail, discarded: e.target.checked })} value="true" />}
@@ -457,6 +545,7 @@ const AddHorseDialogPrime = (props) => {
         </DialogActions>
       </Dialog>
 
+      <Toast ref={toast} />
 
 
       {/* Loader and Spinner*/}
