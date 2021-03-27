@@ -479,7 +479,7 @@ class Races extends Component {
       }
     }
 
-    fetch("api/graphql", {
+    return fetch("api/graphql", {
       method: 'POST',
       body: JSON.stringify(requestBody),
       headers: {
