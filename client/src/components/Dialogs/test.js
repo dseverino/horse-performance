@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import React, { useEffect } from 'react';
 import TextField from '@material-ui/core/TextField';
 import Dialog from '@material-ui/core/Dialog';
@@ -16,6 +15,13 @@ export default function FreeSoloCreateOptionDialog(props) {
   const [open, toggleOpen] = React.useState(false);
   const { options } = props;
 
+  useEffect(() => {    
+    if (props.create?.visible) {
+      setDialogValue({ ...dialogValue, name: props.create.name })
+      toggleOpen(true);
+    }
+  }, [props.create])
+  
   const handleClose = () => {
     setDialogValue({
       name: ''
@@ -39,6 +45,8 @@ export default function FreeSoloCreateOptionDialog(props) {
     handleClose();
   };
 
+  
+
   // useEffect(() => {
   //   console.log(value)
   // }, [value])
@@ -47,6 +55,7 @@ export default function FreeSoloCreateOptionDialog(props) {
     <React.Fragment>
       <Autocomplete
         value={value}
+        disabled={props.disabled}
         onChange={(event, newValue) => {
           if (typeof newValue === 'string') {
             // timeout to avoid instant validation of the dialog's form.
@@ -90,15 +99,18 @@ export default function FreeSoloCreateOptionDialog(props) {
         }}
         selectOnFocus
         clearOnBlur
-        handleHomeEndKeys
+
         renderOption={(option) => option.name}
         freeSolo
-        blurOnSelect
+
         onFocus={(e) => e.target.select()}
         renderInput={(params) => (
-          <TextField {...params} label={props.title} variant={props.variant || 'outlined'} />
+          <TextField
+            {...params} label={props.title} variant={props.variant || 'outlined'}
+          />
         )}
       />
+
       <Dialog open={open} onClose={handleClose} aria-labelledby="form-dialog-title">
         <form onSubmit={handleSubmit}>
           <DialogTitle id="form-dialog-title">Add a new {props.title}</DialogTitle>

@@ -499,6 +499,7 @@ class Races extends Component {
           return { ...prevState, races: races, isLoading: false }
         })
         this.setState({ isLoading: false })
+        window.scrollTo(0, document.body.scrollHeight);
         return resData
       })
       .catch(error => {
@@ -530,7 +531,7 @@ class Races extends Component {
     this.setState({ showDialogOb: { ...this.state.showDialogOb, [name]: this.dialogMap[name] } })
   }
 
-  onAddHorseToRace = (race) => {
+  onOpenAddDialog = (race) => {
     this.setState({ displayDialog: true, currentRaceSelected: race })
   }
 
@@ -564,7 +565,7 @@ class Races extends Component {
           race={race}
           value={this.state.selectedRace}
           index={index}
-          onAddHorseToRace={this.onAddHorseToRace}
+          openAddDialog={this.onOpenAddDialog}
           openRaceDetailsDialog={() => this.setState({ displayRaceDetailsDialog: true, currentRaceSelected: race })}
           openHorseRaceDetails={() => this.setState({ displayHorseRaceDetailsDialog: true, currentRaceSelected: race })}
         //addHorseDialog={this.addDialog}

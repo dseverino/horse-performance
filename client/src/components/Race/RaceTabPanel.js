@@ -100,8 +100,8 @@ const RaceTabPanel = props => {
 
 
     //setState({ displayBasic: true })
-
-    props.onAddHorseToRace(props.race)
+    
+    props.openAddDialog(props.race)
   }
   function closeDialog() {
     setDialogList({ "addHorse": null })

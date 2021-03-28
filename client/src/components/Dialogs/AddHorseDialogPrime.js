@@ -43,6 +43,13 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const AddHorseDialogPrime = (props) => {
+  const [createHorse, setCreateHorse] = useState({ visible: false });
+  const [createStable, setCreateStable] = useState({ visible: false });
+  const [createTrainer, setCreateTrainer] = useState({ visible: false });
+  const [createJockey, setCreateJockey] = useState({ visible: false });
+
+  let horsesLoaded = useRef([])
+  let horseObject = useRef({});
   const classes = useStyles();
   const toast = useRef(null);
   const authContext = useContext(AuthContext);
@@ -104,8 +111,7 @@ const AddHorseDialogPrime = (props) => {
   }
 
   function clearValues() {
-    setHorse({ name: "", age: 2, color: "Z", sex: "M", stable: "", sire: "", dam: "", weight: "", procedence: "native" })
-    setSelectedHorse({ name: '', stable: { name: '' }, saveHorse: false })
+    setHorse({ name: "", age: 2, color: "Z", sex: "M", stable: "", sire: "", dam: "", weight: "", procedence: "native" });
     setHorseRaceDetail(prevState => (
       {
         claiming: "",
@@ -127,7 +133,9 @@ const AddHorseDialogPrime = (props) => {
         trainer: ""
       })
     );
+    setSelectedHorse({ name: '', stable: { name: '' }, continue: false })
   }
+
 
   function handleAdd() {
     setLoading(true);
@@ -162,10 +170,10 @@ const AddHorseDialogPrime = (props) => {
 
         onHorseAdded(props.index, raceSelected._id, selectedHorse).then((data) => {
           setLoading(false);
-          clearValues()
+          clearValues();
           toast.current.show({ severity: 'success', summary: 'Horse added', detail: 'Horse added to race', life: 3000 });
         })
-                //props.onClose()
+        //props.onClose()
       })
       .catch(error => {
         console.log(error)
@@ -178,35 +186,41 @@ const AddHorseDialogPrime = (props) => {
     if (!horse) {
       return
     }
-    var eqp = ["E", "F"];
-    var medic = ["B"];
-    var jockey = ""
-    var jockeySelected = { name: '', value: '' }
-    var details = horse.raceDetails;
-
-    if (details && details.length === 1) {
-      eqp = details[0].horseEquipments;
-      medic = details[0].horseMedications;
-      jockey = details[0].jockey._id;
-      jockeySelected = { name: details[0].jockey.name, value: details[0].jockey._id }
+    if (horseObject.current) {
+      horseObject.current._id = horse._id;
+      horseObject.current.age = horse.age;
+      horseObject.current.name = horse.name;
+      verifyStable();
     }
-    else if (details.length > 1) {
-      eqp = details[details.length - 1].horseEquipments;
-      medic = details[details.length - 1].horseMedications;
-      jockey = details[details.length - 1].jockey._id;
-      jockeySelected = { name: details[details.length - 1].jockey.name, value: details[details.length - 1].jockey._id }
-    }
+    else {
+      var eqp = ["E", "F"];
+      var medic = ["B"];
+      var jockey = ""
+      var jockeySelected = { name: '', value: '' }
+      var details = horse.raceDetails;
 
-    setHorseRaceDetail({ ...horseRaceDetail, horseAge: horse.age, stable: horse.stable._id, trainer: horse.stable.trainers && horse.stable.trainers.length === 1 ? horse.stable.trainers[0]._id : "", claiming: raceSelected.claimings.length === 1 ? raceSelected.claimings[0] : "", horseWeight: horse.weight || 0, horseEquipments: eqp, horseMedications: medic, jockey: jockey })
-    setAutoCompleteValues({
-      jockey: jockeySelected,
-      stable: { name: horse.stable.name, value: horse.stable._id },
-      trainer: { name: horse.stable.trainers[0]?.name || '', value: horse.stable.trainers[0]?._id || '' }
-    });
-    setSelectedHorse({ ...horse });
+      if (details && details.length === 1) {
+        eqp = details[0].horseEquipments;
+        medic = details[0].horseMedications;
+        jockey = details[0].jockey._id;
+        jockeySelected = { name: details[0].jockey.name, value: details[0].jockey._id }
+      }
+      else if (details.length > 1) {
+        eqp = details[details.length - 1].horseEquipments;
+        medic = details[details.length - 1].horseMedications;
+        jockey = details[details.length - 1].jockey._id;
+        jockeySelected = { name: details[details.length - 1].jockey.name, value: details[details.length - 1].jockey._id }
+      }
+
+      setHorseRaceDetail({ ...horseRaceDetail, horseAge: horse.age, stable: horse.stable._id, trainer: horse.stable.trainers && horse.stable.trainers.length === 1 ? horse.stable.trainers[0]._id : "", claiming: raceSelected.claimings.length === 1 ? raceSelected.claimings[0] : "", horseWeight: horse.weight || 0, horseEquipments: eqp, horseMedications: medic, jockey: jockey })
+      setAutoCompleteValues({
+        jockey: jockeySelected,
+        stable: { name: horse.stable.name, value: horse.stable._id },
+        trainer: { name: horse.stable.trainers[0]?.name || '', value: horse.stable.trainers[0]?._id || '' }
+      });
+      setSelectedHorse({ ...horse });
+    }
   }
-
-
 
   const onEquipMedicationChange = (name, col) => event => {
     var ar = horseRaceDetail[col];
@@ -235,11 +249,16 @@ const AddHorseDialogPrime = (props) => {
     const stable = await saveStable(name)
     setLoading(false);
     if (stable) {
-      setHorse({ ...horse, stable: stable._id });
       authContext.addStable(stable);
-      setAutoCompleteValues({ ...autoCompleteValues, stable: { name: stable.name, value: stable._id } });
-      setHorseRaceDetail({ ...horseRaceDetail, stable: stable._id, trainer: stable.trainers && stable.trainers.length === 1 ? stable.trainers[0]._id : "" })
-
+      if (horseObject.current) {
+        horseObject.current.stable = stable._id
+        verifyTrainer();
+      }
+      else {
+        setHorse({ ...horse, stable: stable._id });
+        setAutoCompleteValues({ ...autoCompleteValues, stable: { name: stable.name, value: stable._id } });
+        setHorseRaceDetail({ ...horseRaceDetail, stable: stable._id, trainer: stable.trainers && stable.trainers.length === 1 ? stable.trainers[0]._id : "" })
+      }
     }
   }
 
@@ -248,10 +267,15 @@ const AddHorseDialogPrime = (props) => {
     const jockey = await saveJockey(name)
     setLoading(false);
     if (jockey) {
-      //setHorse({ ...horse, jockey: jockey._id });
       authContext.addJockey(jockey);
-      setAutoCompleteValues({ ...autoCompleteValues, jockey: { name: jockey.name, value: jockey._id } });
-      setHorseRaceDetail({ ...horseRaceDetail, jockey: jockey._id })
+      if (horseObject.current) {
+        horseObject.current.jockey = jockey._id;
+        populateHorseRaceDetail();
+      }
+      else {
+        setAutoCompleteValues({ ...autoCompleteValues, jockey: { name: jockey.name, value: jockey._id } });
+        setHorseRaceDetail({ ...horseRaceDetail, jockey: jockey._id })
+      }
     }
   }
 
@@ -260,10 +284,15 @@ const AddHorseDialogPrime = (props) => {
     const trainer = await saveTrainer(name)
     setLoading(false);
     if (trainer) {
-      //setHorse({ ...horse, trainer: trainer._id });
       authContext.addTrainer(trainer);
-      setAutoCompleteValues({ ...autoCompleteValues, trainer: { name: trainer.name, value: trainer._id } });
-      setHorseRaceDetail({ ...horseRaceDetail, trainer: trainer._id })
+      if (horseObject.current) {
+        horseObject.current.trainer = trainer._id;
+        verifyJockey();
+      }
+      else {
+        setAutoCompleteValues({ ...autoCompleteValues, trainer: { name: trainer.name, value: trainer._id } });
+        setHorseRaceDetail({ ...horseRaceDetail, trainer: trainer._id })
+      }
     }
   }
 
@@ -278,25 +307,16 @@ const AddHorseDialogPrime = (props) => {
     },
   };
 
-
-  let horsesLoaded = useRef([])
-  let horseObject = useRef({});
-  let horseReady = false
-
   useEffect(() => {
-    console.log('insside useEffect')
+
     if (horseObject.current.saveHorse) {
-      console.log(horseRaceDetail)
-      console.log(selectedHorse)
+      horseObject.current.saveHorse = false;
       handleAdd();
     }
     else if (!!horsesLoaded.current.length) {
-      console.log('next one')
-      console.log('after save')
-      console.log(horsesLoaded.current)
       saveFileHorses();
     }
-  }, [horseRaceDetail.horseAge, selectedHorse._id])
+  }, [selectedHorse.continue])
 
 
   const readExcel = async (file) => {
@@ -326,18 +346,21 @@ const AddHorseDialogPrime = (props) => {
   }
 
   const saveFileHorses = () => {
-    horseObject.current = horsesLoaded.current.splice(0, 1)[0];
-    console.log(horseObject.current)
+    horseObject.current = horsesLoaded.current.splice(0, 1)[0];    
     loadHorses(horseObject.current.name).then(res => {
       return res.json()
     })
       .then(data => {
         const horses = data.data.horse;
-        if (horses.length) {
+        if (!!horses.length) {
           horseObject.current._id = horses[0]._id;
           horseObject.current.age = horses[0].age;
           horseObject.current.name = horses[0].name;
+          setSelectedHorse({ ...horseObject.current })
           verifyStable()
+        }
+        else {
+          setCreateHorse({ visible: true, name: horseObject.current.name, weight: horseObject.current.weight });
         }
       })
   }
@@ -351,7 +374,7 @@ const AddHorseDialogPrime = (props) => {
       verifyTrainer()
     }
     else {
-
+      setCreateStable({ visible: true, name: horseObject.current.stable });
     }
   }
 
@@ -364,7 +387,7 @@ const AddHorseDialogPrime = (props) => {
       verifyJockey()
     }
     else {
-
+      setCreateTrainer({ visible: true, name: horseObject.current.trainer })
     }
   }
 
@@ -373,25 +396,29 @@ const AddHorseDialogPrime = (props) => {
       return jo.name.toLowerCase().includes(horseObject.current.jockey.toLowerCase())
     })
     if (jo) {
-      setHorseRaceDetail({
-        ...horseRaceDetail,
-        horseAge: horseObject.current.age,
-        stable: horseObject.current.stable,
-        trainer: horseObject.current.trainer,
-        claiming: horseObject.current.claiming,
-        horseWeight: horseObject.current.weight,
-        horseEquipments: horseObject.current.equipments?.split(',') || [],
-        horseMedications: horseObject.current.medications?.split(',') || [],
-        jockey: jo.value,
-        jockeyWeight: horseObject.current.jockeyWeight
-      })
-
-      setSelectedHorse({ ...horseObject.current });
-      horseObject.current.saveHorse = true;
+      horseObject.current.jockey = jo.value;
+      populateHorseRaceDetail();
     }
     else {
-
+      setCreateJockey({ visible: true, name: horseObject.current.jockey });
     }
+  }
+
+  const populateHorseRaceDetail = () => {
+    horseObject.current.saveHorse = true;
+    setHorseRaceDetail({
+      ...horseRaceDetail,
+      horseAge: horseObject.current.age,
+      stable: horseObject.current.stable,
+      trainer: horseObject.current.trainer,
+      claiming: horseObject.current.claiming,
+      horseWeight: horseObject.current.weight,
+      horseEquipments: horseObject.current.equipments?.split(',') || [],
+      horseMedications: horseObject.current.medications?.split(',') || [],
+      jockey: horseObject.current.jockey,
+      jockeyWeight: horseObject.current.jockeyWeight
+    });
+    setSelectedHorse({ ...horseObject.current });
   }
 
   return (
@@ -405,7 +432,7 @@ const AddHorseDialogPrime = (props) => {
 
         <DialogContent dividers>
           <div className="d-flex">
-            <HorseLoader onHorseSelected={onHorseSelected} horse={horse} load={(val) => setLoading(val)} />
+            <HorseLoader onHorseSelected={onHorseSelected} horse={horse} load={(val) => setLoading(val)} createHorse={createHorse} />
             <input onChange={(e) => readExcel(e.target.files[0])} accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style={{ display: 'none' }} id="icon-button-file" type="file" />
             <label htmlFor="icon-button-file">
               <IconButton component="span" > <i className="pi pi-file-excel" style={{ 'fontSize': '1em' }}></i></IconButton>
@@ -432,6 +459,7 @@ const AddHorseDialogPrime = (props) => {
                         value={autoCompleteValues.stable}
                         onChange={(id, ref) => setHorseRaceDetail({ ...horseRaceDetail, stable: id })}
                         onCreate={savedStable}
+                        create={createStable}
                       />
                     </FormControl>
 
@@ -442,6 +470,7 @@ const AddHorseDialogPrime = (props) => {
                         value={autoCompleteValues.trainer}
                         onChange={(id) => setHorseRaceDetail({ ...horseRaceDetail, trainer: id })}
                         onCreate={savedTrainer}
+                        create={createTrainer}
                       />
                     </FormControl>
 
@@ -490,6 +519,7 @@ const AddHorseDialogPrime = (props) => {
                         value={autoCompleteValues.jockey}
                         onChange={(id) => setHorseRaceDetail({ ...horseRaceDetail, jockey: id })}
                         onCreate={savedJockey}
+                        create={createJockey}
                       />
                     </FormControl>
 
