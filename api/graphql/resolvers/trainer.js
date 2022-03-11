@@ -3,8 +3,12 @@ const { transformTrainer } = require("../resolvers/merge")
 
 module.exports = {
   createTrainer: async (args) => {
+    var ob = {};
+    ob[`${new Date().getFullYear()}`] = { 'starts': 0 }
+
     const trainer = new Trainer({
-      name: args.trainerInput.name
+      name: args.trainerInput.name,
+      stats: ob
     })
     try {
       const result = await trainer.save()

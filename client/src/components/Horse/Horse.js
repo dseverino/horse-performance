@@ -60,14 +60,11 @@ const horse = props => {
                 </div>
                 <div>
                   <span style={{ fontWeight: 500, marginRight: 8 }}>
-                    {horseRaceDetailsFiltered[0].jockeyWeight}
-                  </span>
-                  <span>
                     {horseRaceDetailsFiltered[0].horseEquipments.join("")}
                   </span>
-                </div>
-                <div style={{ position: "absolute", right: "20px" }}>
-                  Best Time: {props.horse.bestTimes[props.distance]}
+                  <span>
+                    {horseRaceDetailsFiltered[0].jockeyWeight}
+                  </span>
                 </div>
               </div>
               <div style={{ display: "flex", fontSize: 11 }}>
@@ -76,9 +73,10 @@ const horse = props => {
             </div>
 
             <div style={{ display: "flex" }}>
-              <div ><span>{horseRaceDetailsFiltered[0].jockey.name} </span>
-                <div>( {horseRaceDetailsFiltered[0].jockey.stats ? horseRaceDetailsFiltered[0].jockey.stats[props.dateSelected.getFullYear()].starts : 0} 0-0-0 ) 0.00%</div></div>
-              <div>Vida Statistics</div>
+              <div>
+                <span>{horseRaceDetailsFiltered[0].jockey.name}</span>
+                <div>( {horseRaceDetailsFiltered[0].jockey.stats ? horseRaceDetailsFiltered[0].jockey.stats[props.dateSelected.getFullYear()].starts : 0} 0-0-0 ) 0.00%</div>
+              </div>
             </div>
 
           </div>

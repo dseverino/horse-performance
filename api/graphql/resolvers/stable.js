@@ -3,15 +3,19 @@ const { transformStable } = require("../resolvers/merge")
 
 module.exports = {
 
-  createStable: async (args) => { 
+  createStable: async (args) => {
     const stable = await Stable.findOne({ name: { $regex: new RegExp(`^${args.stableInput.name}$`, "i") } });
-   
-    if(stable){
+
+    if (stable) {
       return transformStable(stable)
     }
     else {
+      var ob = {};
+      ob[`${new Date().getFullYear()}`] = { 'starts': 0 };
+
       const newStable = new Stable({
-        name: args.stableInput.name
+        name: args.stableInput.name,
+        stats: ob
       })
       try {
         const result = await newStable.save()
@@ -45,7 +49,7 @@ module.exports = {
   },
   singleStable: async (args) => {
     try {
-      const name = new RegExp("^" + args.name + "$", "i");      
+      const name = new RegExp("^" + args.name + "$", "i");
       const result = await Stable.findOne({ name: { $regex: name } });
 
       if (result) {

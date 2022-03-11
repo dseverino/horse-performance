@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useMemo } from "react";
 
 import {
   Typography,
   Box,
   Button
- } from '@material-ui/core';
+} from '@material-ui/core';
 import AddIcon from '@material-ui/icons/Add';
 import CheckIcon from '@material-ui/icons/Check';
 
@@ -25,7 +25,7 @@ const formatter = new Intl.NumberFormat('en-US', {
 
 const RaceTabPanel = props => {
   const ctxt = useContext(AuthContext);
-  
+
   const [dialogList, setDialogList] = useState([])
   const [state, setState] = useState({ displayBasic: false })
 
@@ -40,17 +40,6 @@ const RaceTabPanel = props => {
     2000: "1:59.0"
   };
 
-  const horseNameList = []
-  const horseRaceDetailsIds = props.race.horses.map(horse => {
-    let detail = horse.raceDetails.find(detail => props.programDate.toISOString() === detail.date);
-    horseNameList.push(horse.name)
-    return {
-      ...detail,
-      name: horse.name,
-      horseId: horse._id,
-      bestTime: horse.bestTimes[props.race.distance] || ""
-    }
-  });
 
   const [completed, setCompleted] = useState(props.race.completed)
 
@@ -63,11 +52,8 @@ const RaceTabPanel = props => {
   });
   const [open, setOpen] = useState(false);
   const [openRaceDetails, setOpenRaceDetails] = useState(false);
-  const [openHorseRaceDetails, setOpenHorseRaceDetails] = useState(false);
+
   const [loading, setLoading] = React.useState(false);
-
-
-
   const [raceDetails, setRaceDetails] = useState({
     times: {
       quarterMile: "23.0",
@@ -81,8 +67,6 @@ const RaceTabPanel = props => {
     positions: Array(props.race.horses.length).fill({}),
     finalStraightUrl: ""
   });
-
-
 
   const [selectedRetiredHorses, setSelectedRetiredHorses] = useState([]);
 
@@ -100,9 +84,10 @@ const RaceTabPanel = props => {
 
 
     //setState({ displayBasic: true })
-    
+
     props.openAddDialog(props.race)
   }
+
   function closeDialog() {
     setDialogList({ "addHorse": null })
   }
@@ -198,11 +183,11 @@ const RaceTabPanel = props => {
   }, [openRaceDetails])
 
 
-  const horseComponentList = props.race.horses.map(horse => {
+  const horseComponentList = useMemo(() => (props.race.horses.map(horse => {
     return (
       <Horse key={horse._id} distance={props.race.distance} horse={horse} dateSelected={props.programDate} />
     )
-  });
+  })), [props.race.horses]);
 
   const onSpeechRec = () => {
     window.SpeechRecognition =
@@ -211,7 +196,7 @@ const RaceTabPanel = props => {
     // eslint-disable-next-line no-undef
     window.SpeechGrammarList = window.SpeechGrammarList || webkitSpeechGrammarList
     //window.SpeechGrammarList
-    var words = ['espuela', 'fuete', 'gringolas', 'gringolas especiales', 'lengua amarrada', 'lasix', 'buta'];
+    var words = ["escuela", "fuerza", "Guardia", "salsa", "lengua", "alerta"];
     var grammar = '#JSGF V1.0; grammar words; public <word> = ' + words.join(' | ') + ' ;'
 
     // eslint-disable-next-line no-undef
@@ -266,7 +251,7 @@ const RaceTabPanel = props => {
         </Button>
         <Button disabled={completed} color="primary" onClick={handleCloseRace} >
           Close Race
-        <CheckIcon />
+          <CheckIcon />
         </Button>
         <Button disabled={!completed || props.race.hasRaceDetails} color="primary" onClick={handleOpenRaceDetails} >
           Add Race Details

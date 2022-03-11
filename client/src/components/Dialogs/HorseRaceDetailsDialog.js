@@ -1,41 +1,36 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   Button,
-  DialogTitle,
   DialogContent,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   DialogActions,
+  Grid,
+  IconButton,
   Input,
   Checkbox,
   FormLabel,
   FormGroup,
   FormControlLabel,
+  Select,
   TextField,
-  OutlinedInput,
-  makeStyles,
-  Paper,
-  Tabs,
-  Tab,
-  Typography,
-  Box,
   useTheme,
   Chip
-} from '@material-ui/core';
-import CheckBoxOutlineBlankIcon from '@material-ui/icons/CheckBoxOutlineBlank';
-import CheckBoxIcon from '@material-ui/icons/CheckBox';
+} from '@mui/material';
 
-import MaskedInput from 'react-text-mask';
 
-import { InputTextarea } from 'primereact/inputtextarea';
-import { Dropdown } from "primereact/dropdown";
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+
+import { makeStyles } from '@material-ui/core';
+
+import { IMaskInput } from 'react-imask';
+import * as XLSX from 'xlsx';
+
 import { Dialog } from "primereact/dialog";
 
 import { AuthContext } from "../../context/auth-context";
-import FreeSoloCreateOptionDialog from './test';
+import FreeSoloCreateOptionDialog from './FreeSoloCreateOptionDialog';
 import Positions from '../Positions';
 
 import './HorseRaceDetailsDialog.css';
@@ -54,11 +49,11 @@ function getStyles(name, personName, theme) {
     fontWeight: personName.indexOf(name) === -1 ? theme.typography.fontWeightRegular : 900,
   };
 }
-const HorseRaceDetailsDialog = (props) => {
+const HorseRaceDetailsDialog = ({ raceSelected, date, loading, loadRace, onClose, header, visible }) => {
   const classes = useStyles();
   const theme = useTheme();
-
-  const { raceSelected, ...other } = props;
+  const fileRef = useRef();
+  let detailsLoaded = useRef([])
 
   const [autoCompleteValues, setAutoCompleteValues] = useState({
     stable: { name: '', value: '' },
@@ -68,21 +63,26 @@ const HorseRaceDetailsDialog = (props) => {
 
   const authContext = useContext(AuthContext);
 
-  const [selectedHorse, setSelectedHorse] = useState({ _id: "", status: "", claimedBy: "", comments: "", positions: {} })
+  const [selectedHorse, setSelectedHorse] = useState({ _id: "", status: "", claimedBy: "", comments: "", positions: {}, finishTime: '' })
 
   const [fullWidth, setFullWidth] = useState(false);
-  const horseRaceDetailsIds = props.raceSelected.horses.map(horse => {
-    let detail = horse.raceDetails.find(detail => props.date.toISOString() === detail.date);
-    return {
-      ...detail,
-      name: horse.name,
-      horseId: horse._id,
-      bestTime: horse.bestTimes[props.raceSelected.distance] || ""
-    }
-  });
+
+  const horseRaceDetailsList = useMemo(() => {
+    return raceSelected.horses.map(horse => {
+      let detail = horse.raceDetails.find(detail => date.toISOString() === detail.date);
+      return {
+        ...detail,
+        name: horse.name,
+        horseId: horse._id,
+        bestTime: horse.bestTimes[raceSelected.distance] || ""
+      }
+    })
+  }, [raceSelected]);
+
   const [state, setState] = useState({})
+
   useEffect(() => {
-    const elements = ['NO', 'NK', 'HD']
+    const elements = ['NO', 'NK', 'HD', "¼", "½", "¾"]
     const parts = ['', "¼", "½", "¾"]
     for (let index = 1; index < 100; index++) {
       for (let j = 0; j < 4; j++) {
@@ -97,7 +97,7 @@ const HorseRaceDetailsDialog = (props) => {
       positions: [...Array(raceSelected.totalHorses).keys()].map(el => ++el).map((val, index) => {
         return <option key={index} value={val}>{val}</option>
       }),
-      bettingList: ["1/9", "1/5", "2/5", "1/2", "3/5", "4/5", "1/1", "6/5", "7/5", "3/2", "8/5", "9/5", "2/1", "5/2", "3/1", "7/2", "4/1", "9/2"].concat([...Array(100).keys()].filter(el => el > 4).map(el => `${el}/1`)).map((val, index) => {
+      bettingList: ["1/9", "1/5", "2/5", "1/2", "3/5", "4/5", "1", "6/5", "7/5", "3/2", "8/5", "9/5", "2", "5/2", "3", "7/2", "4", "9/2"].concat([...Array(100).keys()].filter(el => el > 4)).map((val, index) => {
         return <option key={index} value={val}>{val}</option>
       }),
       jockeys: authContext.jockeys.map(jockey => {
@@ -109,31 +109,29 @@ const HorseRaceDetailsDialog = (props) => {
     })
   }, [])
 
-
-
-
-  function TextMaskCustom(props) {
-    const { inputRef, ...other } = props;
-
+  const TextMaskCustom = React.forwardRef(function TextMaskCustom(props, ref) {
+    const { onChange, ...other } = props;
     return (
-      <MaskedInput
+      <IMaskInput
         {...other}
-        ref={ref => {
-          inputRef(ref ? ref.inputElement : null);
+        inputRef={ref}
+        onAccept={(value) => onChange({ target: { name: props.name, value } })}
+        mask="#:%0.$"
+        definitions={{
+          "#": /[0-2]/,
+          "%": /[0-9]/,
+          "$": /[0-4]/
         }}
-        mask={[/[0-2]/, ':', /[0-5]/, /[0-9]/, '.', /[0-4]/]}
         placeholderChar={'\u2000'}
-        showMask
       />
     );
-  }
+  })
 
-  function handleHorseChange(e) {
-
-    const horseRaceDetailSelected = horseRaceDetailsIds.find((detail) => detail._id === e.target.value);
+  function handleHorseChange(e, i) {
+    const horseRaceDetailSelected = horseRaceDetailsList.find((detail) => detail._id === e.target.value);
     setSelectedHorse({
       ...horseRaceDetailSelected,
-      bet: '',
+      bet: horseRaceDetailSelected.bet || '',
       claimedBy: null,
       trackCondition: raceSelected.trackCondition,
       times: raceSelected.times,
@@ -144,7 +142,8 @@ const HorseRaceDetailsDialog = (props) => {
       totalHorses: raceSelected.totalHorses,
       horseEquipments: horseRaceDetailSelected.horseEquipments.slice(),
       horseMedications: horseRaceDetailSelected.horseMedications.slice(),
-      lengths: { ...horseRaceDetailSelected.lengths },
+      beatenLengths: { ...horseRaceDetailSelected.beatenLengths },
+      byLengths: { ...horseRaceDetailSelected.byLengths },
       positions: { ...horseRaceDetailSelected.positions },
       status: horseRaceDetailSelected.status || "finished",
       comments: horseRaceDetailSelected.comments || ""
@@ -152,8 +151,9 @@ const HorseRaceDetailsDialog = (props) => {
     setAutoCompleteValues({ ...autoCompleteValues, jockey: { name: horseRaceDetailSelected.jockey.name, value: horseRaceDetailSelected.jockey._id }, stable: { name: horseRaceDetailSelected.stable.name, value: horseRaceDetailSelected.stable._id } })
     //setSelectedHorse( JSON.parse( JSON.stringify( horseRaceDetailSelected  ) ) );
   }
+
   function saveHorseRaceDetailsHandler() {
-    props.loading(true)
+    loading(true)
     if (selectedHorse.claimed && selectedHorse.claimedBy === selectedHorse.stable._id) {
       selectedHorse.claimed = false
       selectedHorse.claimedBy = ''
@@ -194,23 +194,51 @@ const HorseRaceDetailsDialog = (props) => {
         return result.json()
       })
       .then(resData => {
-        props.loading(false);
+        loading(false);
         //props.setOpenHorseRaceDetails(false)
         setSelectedHorse({ _id: "", status: "" })
-        props.loadRace(raceSelected._id, raceSelected.event)
-        props.onClose()
+        loadRace(raceSelected._id, raceSelected.event)
+        onClose()
       })
       .catch(error => {
         console.log(error)
-        props.loading(false);
+        loading(false);
       })
+  }
+
+  const readExcel = async (file) => {
+    const promise = new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+      fileReader.readAsArrayBuffer(file);
+
+      fileReader.onload = (e) => {
+        const bufferArray = e.target.result;
+        const wb = XLSX.read(bufferArray, { type: 'buffer' });
+        const wsname = wb.SheetNames[3];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+        fileRef.current.value = '';
+        resolve(data);
+      }
+      fileReader.onerror = (error) => {
+        reject(error);
+      }
+    });
+
+    promise.then((detailsList) => {
+      detailsLoaded.current = detailsList;
+      if (detailsList.length) {
+        console.log(detailsList)
+        //saveRacesHandler(detailsList)
+      }
+    })
   }
 
   function handleCloseHorseRaceDetails() {
     setSelectedHorse({ _id: "", status: "" });
     setFullWidth(false)
 
-    props.onClose();
+    onClose();
   }
 
   function onJockeyChange(id) {
@@ -239,15 +267,16 @@ const HorseRaceDetailsDialog = (props) => {
   }
 
   async function savedStable(name) {
-    props.loading(true);
+    loading(true);
     const stable = await saveStable(name)
-    props.loading(false);
+    loading(false);
     if (stable) {
       setSelectedHorse({ ...selectedHorse, claimedBy: stable._id });
       authContext.addStable(stable);
       setAutoCompleteValues({ ...autoCompleteValues, claimedBy: { name: stable.name, value: stable._id } });
     }
   }
+
 
   const ITEM_HEIGHT = 48;
   const ITEM_PADDING_TOP = 8;
@@ -265,36 +294,39 @@ const HorseRaceDetailsDialog = (props) => {
       <Dialog
         disableBackdropClick
         disableEscapeKeyDown
-        onHide={props.onClose}
-        onClose={props.onClose}
+        onHide={onClose}
+        onClose={onClose}
         maxWidth='sm'
         fullWidth={fullWidth}
-        {...other}
+        header={header}
+        visible={visible}
       >
         <DialogContent>
-          <div className={classes.root}>
-            <FormControl>
-              <InputLabel htmlFor="max-width">Select Horse</InputLabel>
+          <>
+            <FormControl sx={{ m: 1, minWidth: 200 }}>
+              <InputLabel id="horse-name-label">Select Horse</InputLabel>
               <Select
                 value={selectedHorse._id}
                 onChange={handleHorseChange}
-                inputProps={{
-                  name: 'max-width',
-                  id: 'max-width',
-                }}
+                labelId="horse-name-label"
+                id="horse-name"
+                label="Select Horse"
               >
                 {
-                  raceSelected.horses.map(horse => {
-                    const value = horse.raceDetails.find(detail => props.date.toISOString() === detail.date);
-                    return <MenuItem key={horse._id} value={value._id}>{horse.name}</MenuItem>
+                  horseRaceDetailsList.map(detail => {
+                    return <MenuItem disabled={detail.confirmed} key={detail._id} value={detail._id}>{detail.name}</MenuItem>
                   })
                 }
               </Select>
             </FormControl>
 
-            <FormControl disabled={!selectedHorse.name} >
+            <FormControl sx={{ m: 1, minWidth: 200 }} disabled={!selectedHorse.name} >
               <InputLabel>Status result</InputLabel>
-              <Select value={selectedHorse.status} onChange={e => setSelectedHorse({ ...selectedHorse, status: e.target.value })} >
+              <Select value={selectedHorse.status}
+                label="Status result"
+                disabled={selectedHorse.status === "retired"}
+                onChange={e => setSelectedHorse({ ...selectedHorse, status: e.target.value })}
+              >
                 <MenuItem value={"finished"}>
                   Finished
                 </MenuItem>
@@ -312,7 +344,19 @@ const HorseRaceDetailsDialog = (props) => {
                 </MenuItem>
               </Select>
             </FormControl>
-          </div>
+            <FormControl sx={{ m: 1, minWidth: 50 }}>
+              <input
+                ref={fileRef}
+                onChange={(e) => readExcel(e.target.files[0])}
+                accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                style={{ display: 'none' }} id="icon-button-file"
+                type="file"
+              />
+              <label htmlFor="icon-button-file">
+                <IconButton disabled={!date} component="span" > <i className="pi pi-file-excel" style={{ 'fontSize': '1em' }}></i></IconButton>
+              </label>
+            </FormControl>
+          </>
           {
             selectedHorse.name && selectedHorse.status &&
 
@@ -332,7 +376,14 @@ const HorseRaceDetailsDialog = (props) => {
 
 
                   <TextField id="jockeyweight" disabled={selectedHorse.status === "retired"}
-                    label="Jockey Weight" type="number" onChange={e => setSelectedHorse({ ...selectedHorse, "jockeyWeight": Number(e.target.value) })} keyfilter="pint" value={selectedHorse.jockeyWeight} margin="normal" variant="outlined" />
+                    label="Jockey Weight"
+                    type="number"
+                    onChange={e => setSelectedHorse({ ...selectedHorse, "jockeyWeight": Number(e.target.value) })}
+                    keyfilter="pint"
+                    value={selectedHorse.jockeyWeight}
+                    margin="normal"
+                    variant="outlined"
+                  />
 
 
                   <FormControl>
@@ -416,6 +467,7 @@ const HorseRaceDetailsDialog = (props) => {
                       native
                       value={selectedHorse.bet}
                       onChange={(e) => setSelectedHorse({ ...selectedHorse, bet: e.target.value })}
+                      disabled={selectedHorse.status === "retired"}
                       input={<Input id="bet-select-native" />}
                     >
                       <option aria-label="None" value="" />
@@ -441,25 +493,6 @@ const HorseRaceDetailsDialog = (props) => {
                     />
                   </FormControl>
 
-                  <FormControl>
-
-                    <TextField
-                      id="comments"
-                      label="Comments"
-                      multiline
-                      rows={5}
-                      variant="outlined"
-                      value={selectedHorse.comments}
-                      onChange={(e) => setSelectedHorse({ ...selectedHorse, comments: e.target.value })}
-                    />
-                  </FormControl>
-
-
-                  <FormControlLabel
-                    control={<Checkbox checked={selectedHorse.confirmed} onChange={e => setSelectedHorse({ ...selectedHorse, confirmed: e.target.checked })} value="true" />}
-                    label="Confirmed"
-                  />
-
                 </div>
 
 
@@ -484,12 +517,14 @@ const HorseRaceDetailsDialog = (props) => {
                         </Select>
                       </FormControl>
                     </div>
-                    <div>
-                      <InputLabel className="d-flex align-items-end">Lengths</InputLabel>
+
+                    <div style={{ display: 'flex', marginBottom: '20px' }}>
+                      <InputLabel className="d-flex align-items-end">By Lengths</InputLabel>
+                    </div>
+                    <div >
+                      <InputLabel className="d-flex align-items-end">Beaten Lengths</InputLabel>
                     </div>
                   </form>
-
-
 
                   <form style={{ width: '65%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
 
@@ -525,7 +560,7 @@ const HorseRaceDetailsDialog = (props) => {
                       </FormControl>
 
                       {
-                        props.raceSelected.distance > 1200 && (
+                        raceSelected.distance > 1200 && (
                           <FormControl>
                             <InputLabel shrink>3/4</InputLabel>
                             <Select
@@ -544,7 +579,7 @@ const HorseRaceDetailsDialog = (props) => {
                       }
 
                       {
-                        props.raceSelected.distance > 1400 && (
+                        raceSelected.distance > 1400 && (
                           <FormControl>
                             <InputLabel shrink>Mile</InputLabel>
                             <Select
@@ -580,11 +615,12 @@ const HorseRaceDetailsDialog = (props) => {
 
                     </div>
 
+
                     <div className="length-width">
 
-                      <Select value={selectedHorse.lengths.quarterMile}
+                      <Select value={selectedHorse.byLengths.quarterMile}
                         native
-                        onChange={(e) => setSelectedHorse({ ...selectedHorse, lengths: { ...selectedHorse.lengths, quarterMile: e.target.value } })}
+                        onChange={(e) => setSelectedHorse({ ...selectedHorse, byLengths: { ...selectedHorse.byLengths, quarterMile: e.target.value } })}
                         input={<Input id="quarterMile-dialog-native" />}
                       >
                         <option aria-label="None" value="" />
@@ -593,9 +629,9 @@ const HorseRaceDetailsDialog = (props) => {
                         }
                       </Select>
 
-                      <Select value={selectedHorse.lengths.halfMile}
+                      <Select value={selectedHorse.byLengths.halfMile}
                         native
-                        onChange={(e) => setSelectedHorse({ ...selectedHorse, lengths: { ...selectedHorse.lengths, halfMile: e.target.value } })}
+                        onChange={(e) => setSelectedHorse({ ...selectedHorse, byLengths: { ...selectedHorse.byLengths, halfMile: e.target.value } })}
                         input={<Input id="halfMile-length-dialog-native" />}
                       >
                         <option aria-label="None" value="" />
@@ -605,10 +641,10 @@ const HorseRaceDetailsDialog = (props) => {
                       </Select>
 
                       {
-                        props.raceSelected.distance > 1200 && (
-                          <Select value={selectedHorse.lengths.thirdQuarter}
+                        raceSelected.distance > 1200 && (
+                          <Select value={selectedHorse.byLengths.thirdQuarter}
                             native
-                            onChange={(e) => setSelectedHorse({ ...selectedHorse, lengths: { ...selectedHorse.lengths, thirdQuarter: e.target.value } })}
+                            onChange={(e) => setSelectedHorse({ ...selectedHorse, byLengths: { ...selectedHorse.byLengths, thirdQuarter: e.target.value } })}
                             input={<Input id="third-length-dialog-native" />}
                           >
                             <option aria-label="None" value="" />
@@ -620,10 +656,10 @@ const HorseRaceDetailsDialog = (props) => {
                       }
 
                       {
-                        props.raceSelected.distance > 1400 && (
-                          <Select value={selectedHorse.lengths.mile}
+                        raceSelected.distance > 1400 && (
+                          <Select value={selectedHorse.byLengths.mile}
                             native
-                            onChange={(e) => setSelectedHorse({ ...selectedHorse, lengths: { ...selectedHorse.lengths, mile: e.target.value } })}
+                            onChange={(e) => setSelectedHorse({ ...selectedHorse, byLengths: { ...selectedHorse.byLengths, mile: e.target.value } })}
                             input={<Input id="mile-length-dialog-native" />}
                           >
                             <option aria-label="None" value="" />
@@ -635,9 +671,76 @@ const HorseRaceDetailsDialog = (props) => {
                       }
 
 
-                      <Select value={selectedHorse.lengths.finish}
+                      <Select value={selectedHorse.byLengths.finish}
                         native
-                        onChange={(e) => setSelectedHorse({ ...selectedHorse, lengths: { ...selectedHorse.lengths, finish: e.target.value } })}
+                        onChange={(e) => setSelectedHorse({ ...selectedHorse, byLengths: { ...selectedHorse.byLengths, finish: e.target.value } })}
+                        input={<Input id="finish-length-native" />}
+                      >
+                        <option aria-label="None" value="" />
+                        {
+                          state.lengthList
+                        }
+                      </Select>
+                    </div>
+
+                    <div className="length-width">
+
+                      <Select value={selectedHorse.beatenLengths.quarterMile}
+                        native
+                        onChange={(e) => setSelectedHorse({ ...selectedHorse, beatenLengths: { ...selectedHorse.beatenLengths, quarterMile: e.target.value } })}
+                        input={<Input id="quarterMile-dialog-native" />}
+                      >
+                        <option aria-label="None" value="" />
+                        {
+                          state.lengthList
+                        }
+                      </Select>
+
+                      <Select value={selectedHorse.beatenLengths.halfMile}
+                        native
+                        onChange={(e) => setSelectedHorse({ ...selectedHorse, beatenLengths: { ...selectedHorse.beatenLengths, halfMile: e.target.value } })}
+                        input={<Input id="halfMile-length-dialog-native" />}
+                      >
+                        <option aria-label="None" value="" />
+                        {
+                          state.lengthList
+                        }
+                      </Select>
+
+                      {
+                        raceSelected.distance > 1200 && (
+                          <Select value={selectedHorse.beatenLengths.thirdQuarter}
+                            native
+                            onChange={(e) => setSelectedHorse({ ...selectedHorse, beatenLengths: { ...selectedHorse.beatenLengths, thirdQuarter: e.target.value } })}
+                            input={<Input id="third-length-dialog-native" />}
+                          >
+                            <option aria-label="None" value="" />
+                            {
+                              state.lengthList
+                            }
+                          </Select>
+                        )
+                      }
+
+                      {
+                        raceSelected.distance > 1400 && (
+                          <Select value={selectedHorse.beatenLengths.mile}
+                            native
+                            onChange={(e) => setSelectedHorse({ ...selectedHorse, beatenLengths: { ...selectedHorse.beatenLengths, mile: e.target.value } })}
+                            input={<Input id="mile-length-dialog-native" />}
+                          >
+                            <option aria-label="None" value="" />
+                            {
+                              state.lengthList
+                            }
+                          </Select>
+                        )
+                      }
+
+
+                      <Select value={selectedHorse.beatenLengths.finish}
+                        native
+                        onChange={(e) => setSelectedHorse({ ...selectedHorse, beatenLengths: { ...selectedHorse.beatenLengths, finish: e.target.value } })}
                         input={<Input id="finish-length-native" />}
                       >
                         <option aria-label="None" value="" />
@@ -649,6 +752,28 @@ const HorseRaceDetailsDialog = (props) => {
 
                   </form>
                 </div>
+
+                <div className={classes.root} style={{ marginTop: '1rem' }}>
+                  <FormControl>
+                    <TextField
+                      id="comments"
+                      label="Comments"
+                      multiline
+                      rows={5}
+                      variant="outlined"
+                      value={selectedHorse.comments}
+                      onChange={(e) => setSelectedHorse({ ...selectedHorse, comments: e.target.value })}
+                    />
+                  </FormControl>
+
+
+                  <FormControlLabel
+                    control={<Checkbox checked={selectedHorse.confirmed} onChange={e => setSelectedHorse({ ...selectedHorse, confirmed: e.target.checked })} value="true" />}
+                    label="Confirmed"
+                  />
+                </div>
+
+
               </React.Fragment>
             )
 

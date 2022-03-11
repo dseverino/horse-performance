@@ -1,19 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { Dialog } from 'primereact/dialog'
 
 import {
-  DialogTitle,
+  Box,
   DialogContent,
   DialogActions,
   FormControl,
   InputLabel,
   Select,
-  Input,
+  OutlinedInput,
   Checkbox, ListItemText, Chip, TextField,
   MenuItem,
   Button
-} from '@material-ui/core';
+} from '@mui/material';
 
 import MaskedInput from 'react-text-mask';
 
@@ -52,7 +52,8 @@ const RaceDetailsDialog = props => {
       },
     },
   };
-  const horseRaceDetailsIds = props.raceSelected.horses.map(horse => {
+
+  const horseRaceDetailsList = useMemo(() => (props.raceSelected.horses.map(horse => {
     let detail = horse.raceDetails.find(detail => props.date.toISOString() === detail.date);
     horseNameList.push(horse.name)
     return {
@@ -61,80 +62,7 @@ const RaceDetailsDialog = props => {
       horseId: horse._id,
       bestTime: horse.bestTimes[props.raceSelected.distance] || ""
     }
-  });
-  const [timeLeader, setTimeLeader] = useState({
-    quarterMile: "23.0",
-    halfMile: '47.0',
-    thirdQuarter: '1:08.0',
-    mile: "1:35.0",
-    finish: '0:57.0'
-  });
-
-  const handleChangeQuater = name => event => {
-    var times = raceDetails.times;
-    if (name === 'quarter') {
-      times.quarterMile = event.target.value + '.' + times.quarterMile.split('.')[1]
-    }
-    else {
-      times.quarterMile = times.quarterMile.split('.')[0] + '.' + event.target.value
-    }
-
-    setRaceDetails({ ...raceDetails, times: times });
-    setTimeLeader({ ...timeLeader, quarterMile: times.quarterMile });
-
-  }
-
-  const handleChangeHalfMile = name => event => {
-    var times = raceDetails.times;
-    if (name === 'halfMile') {
-      times.halfMile = event.target.value + '.' + times.halfMile.split('.')[1]
-    }
-    else {
-      times.halfMile = times.halfMile.split('.')[0] + '.' + event.target.value
-    }
-    setRaceDetails({ ...raceDetails, times: times })
-    setTimeLeader({ ...timeLeader, halfMile: times.halfMile });
-  }
-
-  const handleChangeThirdQuarter = name => event => {
-    var times = raceDetails.times;
-    if (name === 'thirdQuarter') {
-      times.thirdQuarter = event.target.value + '.' + times.thirdQuarter.split('.')[1] || 0
-    }
-    else {
-      times.thirdQuarter = times.thirdQuarter.split('.')[0] + '.' + event.target.value
-    }
-    setRaceDetails({ ...raceDetails, times: times });
-    setTimeLeader({ ...timeLeader, thirdQuarter: times.thirdQuarter });
-  }
-
-  const handleChangeMile = name => event => {
-    var times = raceDetails.times;
-    if (name === 'mile') {
-      times.mile = event.target.value + '.' + times.mile.split('.')[1]
-    }
-    else {
-      times.mile = times.mile.split('.')[0] + '.' + event.target.value
-    }
-    setRaceDetails({ ...raceDetails, times: times })
-    setTimeLeader({ ...timeLeader, mile: times.mile });
-  }
-
-  const handleChangeFinish = name => event => {
-    var times = raceDetails.times;
-
-    if (name === 'finishMinutes') {
-      times.finish = event.target.value + ':' + times.finish.split(':')[1]
-    }
-    else if (name === 'finishSeconds') {
-      times.finish = times.finish.split(":")[0] + ":" + event.target.value + '.' + times.finish.split('.')[1]
-    }
-    else {
-      times.finish = times.finish.split('.')[0] + '.' + event.target.value
-    }
-    setRaceDetails({ ...raceDetails, times: times })
-    setTimeLeader({ ...timeLeader, finish: times.finish });
-  }
+  })), [props.raceSelected.horses]);
 
   useEffect(() => {
     const totalHorses = props.raceSelected.horses.length - selectedRetiredHorses.length
@@ -167,7 +95,7 @@ const RaceDetailsDialog = props => {
         raceId: props.raceSelected._id,
         raceDetails: raceDetails,
         retiredHorses: selectedRetiredHorses,
-        horseRaceDetailIds: horseRaceDetailsIds.map(val => val._id)
+        horseRaceDetailIds: horseRaceDetailsList.map(val => val._id)
       }
     }
 
@@ -221,171 +149,149 @@ const RaceDetailsDialog = props => {
       disableEscapeKeyDown
       header="Race Details"
       onClose={props.onClose}
+      style={{ width: '50vw' }}
     >
       <DialogContent>
-        <form className="details-form">
-          <FormControl >
-            <InputLabel htmlFor="select-multiple-checkbox">Select Retired Horses</InputLabel>
-            <Select
-              multiple
-              value={selectedRetiredHorses}
-              onChange={handleRetirementChange}
-              input={<Input id="select-multiple-checkbox" />}
-              renderValue={selected => (
-                <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-                  {selected.map(value => (
-                    <Chip key={value} label={horseRaceDetailsIds.find(detail => detail._id === value).name} style={{ display: 'flex', flexWrap: 'wrap' }} />
-                  ))}
-                </div>
-              )}
-              MenuProps={MenuProps}
-            >
-              {
-                horseRaceDetailsIds.map(raceDetail => (
-                  <MenuItem key={raceDetail._id} value={raceDetail._id}>
-                    <Checkbox checked={selectedRetiredHorses.indexOf(raceDetail._id) > -1} />
-                    <ListItemText primary={raceDetail.name} />
-                  </MenuItem>
-                ))
-              }
-            </Select>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap' }}>
 
-          </FormControl>
-          <FormControl>
-
-            <InputLabel htmlFor="formatted-text-mask-input">Track Condition</InputLabel>
-            <Select
-              value={raceDetails.trackCondition}
-              onChange={(e) => setRaceDetails({ ...raceDetails, trackCondition: e.target.value })}
-            >
-              <MenuItem value={"L"}>L</MenuItem>
-              <MenuItem value={"F"}>F</MenuItem>
-              <MenuItem value={"H"}>H</MenuItem>
-            </Select>
-
-          </FormControl>
-
-          <FormControl>
-            <InputLabel htmlFor="formatted-quarter-input">1/4</InputLabel>
-            <Input
-              value={raceDetails.times.quarterMile}
-              onFocus={(e) => e.target.select()}
-              onBlur={e => {
-                if (e.target.value > 20) {
-                  setRaceDetails({ ...raceDetails, times: { ...raceDetails.times, quarterMile: e.target.value } });
+          <div>
+            <FormControl sx={{ m: 1, width: 300 }}>
+              <InputLabel id="select-multiple-checkbox">Select Retired Horses</InputLabel>
+              <Select
+                multiple
+                labelId="select-multiple-checkbox"
+                id="multiple-chip"
+                value={selectedRetiredHorses}
+                onChange={handleRetirementChange}
+                input={<OutlinedInput id="multiple-select" />}
+                renderValue={selected => (
+                  <div style={{ display: 'flex', flexWrap: 'wrap' }}>
+                    {selected.map(value => (
+                      <Chip key={value} label={horseRaceDetailsList.find(detail => detail._id === value).name} style={{ display: 'flex', flexWrap: 'wrap' }} />
+                    ))}
+                  </div>
+                )}
+                MenuProps={MenuProps}
+              >
+                {
+                  horseRaceDetailsList.map(raceDetail => (
+                    <MenuItem key={raceDetail._id} value={raceDetail._id}>
+                      <Checkbox checked={selectedRetiredHorses.indexOf(raceDetail._id) > -1} />
+                      <ListItemText primary={raceDetail.name} />
+                    </MenuItem>
+                  ))
                 }
-                else {
-                  setRaceDetails({ ...raceDetails, times: { ...raceDetails.times, quarterMile: '' } });
-                }
-              }}
-              id="formatted-quarter-input"
-              inputComponent={TextMaskCustom}
-              inputProps={{
-                mask: [/[0-2]/, /[1-9]/, '.', /[0-4]/]
-              }}
-            />
-
-          </FormControl>
-
-          <FormControl>
-
-            <InputLabel htmlFor="formatted-half-input">1/2</InputLabel>
-            <Input
-              value={raceDetails.times.halfMile}
-              onFocus={(e) => e.target.select()}
-              onBlur={e => {
-                if (e.target.value > 44) {
-                  setRaceDetails({ ...raceDetails, times: { ...raceDetails.times, halfMile: e.target.value } });
-                }
-                else {
-                  setRaceDetails({ ...raceDetails, times: { ...raceDetails.times, halfMile: '' } });
-                }
-              }}
-              id="formatted-half-input"
-              inputComponent={TextMaskCustom}
-              inputProps={{
-                mask: [/[4-5]/, /[0-9]/, '.', /[0-4]/]
-              }}
-            />
-
-          </FormControl>
-
-          {
-            props.raceSelected.distance > 1200 &&
-            <FormControl>
-              <InputLabel htmlFor="formatted-third-quarter-input">3/4</InputLabel>
-              <Input
-                value={raceDetails.times.thirdQuarter}
-                onFocus={(e) => e.target.select()}
-                onBlur={e => {
-                  if (e.target.value.trim().length === 6) {
-                    setRaceDetails({ ...raceDetails, times: { ...raceDetails.times, thirdQuarter: e.target.value } });
-                  }
-                  else {
-                    setRaceDetails({ ...raceDetails, times: { ...raceDetails.times, thirdQuarter: '' } });
-                  }
-                }}
-                id="formatted-third-quarter-input"
-                inputComponent={TextMaskCustom}
-                inputProps={{
-                  mask: [/[1]/, ':', /[1-2]/, /[0-9]/, '.', /[0-4]/]
-                }}
-              />
+              </Select>
 
             </FormControl>
-          }
 
-          {
-            props.raceSelected.distance > 1400 &&
-            <FormControl>
-              <InputLabel htmlFor="formatted-mile-input">Mile</InputLabel>
-              <Input
-                value={raceDetails.times.mile}
-                onFocus={(e) => e.target.select()}
-                onBlur={e => {
-                  if (e.target.value.trim().length === 6) {
-                    setRaceDetails({ ...raceDetails, times: { ...raceDetails.times, mile: e.target.value } });
-                  }
-                  else {
-                    setRaceDetails({ ...raceDetails, times: { ...raceDetails.times, mile: '' } });
-                  }
-                }}
-                id="formatted-mile-input"
-                inputComponent={TextMaskCustom}
-                inputProps={{
-                  mask: [/[1]/, ':', /[3-4]/, /[0-9]/, '.', /[0-4]/]
-                }}
-              />
+            <FormControl sx={{ m: 1, width: '25ch' }}>
+
+              <InputLabel htmlFor="formatted-text-mask-input">Track Condition</InputLabel>
+              <Select
+                value={raceDetails.trackCondition}
+                onChange={(e) => setRaceDetails({ ...raceDetails, trackCondition: e.target.value })}
+              >
+                <MenuItem value={"L"}>L</MenuItem>
+                <MenuItem value={"F"}>F</MenuItem>
+                <MenuItem value={"H"}>H</MenuItem>
+              </Select>
+
             </FormControl>
-          }
+
+          </div>
 
 
-          <FormControl>
-            <InputLabel htmlFor="formatted-finish-input">Finish</InputLabel>
-            <Input
-              value={raceDetails.times.finish}
+
+          <div>
+
+            <MaskedInput
+              mask={[/[2]/, /[1-9]/, '.', /[0-4]/]}
+              className="form-control"
+              placeholder="1/4"
+              label="1/4"
+              guide={false}
               onFocus={(e) => e.target.select()}
-              onBlur={e => {
-                if (e.target.value.trim().length === 6) {
-                  setRaceDetails({ ...raceDetails, times: { ...raceDetails.times, finish: e.target.value } });
-                }
-                else {
-                  setRaceDetails({ ...raceDetails, times: { ...raceDetails.times, finish: '' } });
+              onBlur={(e) => {
+                if (e.target.value.length < 4) {
+                  e.target.select();
                 }
               }}
-              id="formatted-finish-input"
-              inputComponent={TextMaskCustom}
-              inputProps={{
-                mask: props.raceSelected.distance > 1000 ? [/[1-2]/, ':', /[0-5]/, /[0-9]/, '.', /[0-4]/] : [/[0-1]/, ':', /[0-9]/, /[0-9]/, '.', /[0-4]/]
-              }}
+              onChange={(e) => setRaceDetails({ ...raceDetails, times: { ...raceDetails.times, quarterMile: e.target.value } })}
             />
-          </FormControl>
+            <MaskedInput
+              mask={[/[4-5]/, /[0-9]/, '.', /[0-4]/]}
+              className="form-control"
+              placeholder="1/2"
+              guide={false}
+              label="1/2"
+              onFocus={(e) => e.target.select()}
+              onBlur={(e) => {
+                if (e.target.value.length < 4) {
+                  e.target.select();
+                }
+              }}
+              onChange={(e) => setRaceDetails({ ...raceDetails, times: { ...raceDetails.times, halfMile: e.target.value } })}
+            />
 
-          <TextField label="Race url" value={raceDetails.raceUrl} onChange={e => setRaceDetails({ ...raceDetails, raceUrl: e.target.value })} />
+            {
+              props.raceSelected.distance > 1200 && (
+                <MaskedInput
+                  mask={[/[1]/, ':', /[1-2]/, /[0-9]/, '.', /[0-4]/]}
+                  className="form-control"
+                  placeholder="3/4"
+                  guide={false}
+                  label="3/4"
+                  onFocus={(e) => e.target.select()}
+                  onBlur={(e) => {
+                    if (e.target.value.length < 6) {
+                      e.target.select();
+                    }
+                  }}
+                  onChange={(e) => setRaceDetails({ ...raceDetails, times: { ...raceDetails.times, thirdQuarter: e.target.value } })}
+                />
+              )
+            }
 
-          <TextField label="Finals url" value={raceDetails.finalStraightUrl} onChange={e => setRaceDetails({ ...raceDetails, finalStraightUrl: e.target.value })} />
+            {
+              props.raceSelected.distance > 1400 &&
+              <MaskedInput
+                mask={[/[1]/, ':', /[3-4]/, /[0-9]/, '.', /[0-4]/]}
+                className="form-control"
+                placeholder="mile"
+                guide={false}
+                label="mile"
+                onFocus={(e) => e.target.select()}
+                onBlur={(e) => {
+                  if (e.target.value.length < 6) {
+                    e.target.select();
+                  }
+                }}
+                onChange={(e) => setRaceDetails({ ...raceDetails, times: { ...raceDetails.times, mile: e.target.value } })}
+              />
+            }
 
-        </form>
+            <MaskedInput
+              mask={props.raceSelected.distance > 1000 ? [/[1-2]/, ':', /[0-5]/, /[0-9]/, '.', /[0-4]/] : [/[0-1]/, ':', /[0-9]/, /[0-9]/, '.', /[0-4]/]}
+              className="form-control"
+              placeholder="Finish"
+              guide={false}
+              label="Finish"
+              onFocus={(e) => e.target.select()}
+              onBlur={(e) => {
+                if (e.target.value.length < 6) {
+                  e.target.select();
+                }
+              }}
+              onChange={(e) => setRaceDetails({ ...raceDetails, times: { ...raceDetails.times, finish: e.target.value } })}
+            />
+
+            <TextField fullWidth sx={{ m: 1 }} label="Race url" value={raceDetails.raceUrl} onChange={e => setRaceDetails({ ...raceDetails, raceUrl: e.target.value })} />
+
+            <TextField sx={{ m: 1, width: '25ch' }} label="Ending url" value={raceDetails.finalStraightUrl} onChange={e => setRaceDetails({ ...raceDetails, finalStraightUrl: e.target.value })} />
+
+          </div>
+        </Box>
 
       </DialogContent>
       <DialogActions>

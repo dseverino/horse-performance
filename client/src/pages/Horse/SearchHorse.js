@@ -135,7 +135,14 @@ class SearchHorsePage extends Component {
                 mile
                 finish
               }
-              lengths{
+              beatenLengths{
+                quarterMile
+                halfMile
+                thirdQuarter
+                mile
+                finish
+              }
+              byLengths{
                 quarterMile
                 halfMile
                 thirdQuarter

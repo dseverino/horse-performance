@@ -192,6 +192,7 @@ class CreateProgramPage extends Component {
     return (
       <React.Fragment>
         <form>
+          <h2>Create a Program</h2>
           <div className="col-md-3 mb-3">
             <label htmlFor="date">Date</label>
             <Calendar dateFormat="dd/mm/yy" id="date" value={this.state.program.date} onChange={this.onDateChange}></Calendar>

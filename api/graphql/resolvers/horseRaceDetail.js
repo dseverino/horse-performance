@@ -96,7 +96,7 @@ module.exports = {
 
           //myObj['position'] = args.selectedHorse.positions.finish
           myObj['name'] = horseName
-          myObj[`by`] = args.selectedHorse.lengths.finish
+          myObj[`by`] = args.selectedHorse.byLengths.finish
           
           var ob = {}
           ob[`positions.${args.selectedHorse.positions.finish - 1}`] = myObj

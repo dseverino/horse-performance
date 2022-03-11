@@ -5,15 +5,26 @@ import Popover from '@material-ui/core/Popover';
 import Typography from '@material-ui/core/Typography';
 import FastForwardIcon from '@material-ui/icons/FastForward';
 import VideocamOutlinedIcon from '@material-ui/icons/VideocamOutlined';
-
-import { Galleria } from 'primereact/galleria';
-
+import ModalVideo from 'react-modal-video'
 import "./HorseRaceDetail.css"
 import MouseOverPopover from "../Popover/MouseOverPopover";
+import { makeStyles } from '@material-ui/core/styles';
+
+const useStyles = makeStyles((theme) => ({
+  popover: {
+    pointerEvents: 'none',
+  },
+  paper: {
+    padding: theme.spacing(1),
+  },
+}));
 
 const HorseRaceDetail = props => {
+  const classes = useStyles();
   const posObject = props.details.racePositions.positions
   const [state, setState] = useState({ anchorEl: null, full: false });
+  const [commentsAnchorEl, setCommentsAnchorEl] = useState(null);
+
   var jockeyLastName = props.details.jockey.name.split(" ");
   jockeyLastName.shift();
   jockeyLastName.join(" ")
@@ -28,80 +39,115 @@ const HorseRaceDetail = props => {
     })
   }
 
-  const handleClick = (event) => {
-    //setAnchorEl(event.currentTarget);
-  };
-
   const handleClose = () => {
     setState({ anchorEl: null, full: true })
   };
   const open = Boolean(state.anchorEl);
+  const openComments = Boolean(commentsAnchorEl);
 
   const id = open ? 'race-popover' : undefined;
+  const handlePopoverOpen = (event) => {
+    setCommentsAnchorEl(event.currentTarget);
+  };
+
+  const handlePopoverClose = () => {
+    setCommentsAnchorEl(null);
+  };
+
+  const getVideoId = (url) => {
+    return url.substring(url.lastIndexOf("/") + 1, url.lastIndexOf("?"));
+  }
 
   return (
     <div style={{ fontSize: 13, display: "flex", justifyContent: 'space-between', margin: '0px 5px' }}>
-      <div style={{ display: 'flex', width: '12%', justifyContent: 'space-between' }}>
-        <div style={{ width: '35%' }}>{props.date.replace(/\s+/g, '')}</div>
-        <div style={{ width: '5%' }}>L</div>
-        <div style={{ width: '10%' }}>{props.days}</div>
-        <div style={{ width: '20%' }}>Hvc{props.details.raceNumber}</div>
+      <div style={{ display: 'flex', width: '16em', justifyContent: 'space-between' }}>
+        <div style={{ width: '4.5em' }}>{props.date.replace(/\s+/g, '')}</div>
+        <div style={{ width: '2em' }}>{props.days}</div>
+        <div >{props.details.trackCondition}</div>
+        <div >Hvc{props.details.raceNumber}</div>
         <div>{props.details.distance}</div>
-        <div>{props.details.finishTime}</div>
+        <div className="d-flex" style={{ width: '2em' }}>{props.details.finishTime.split(".")[0]}
+          <div style={{ fontSize: '10px' }}>{props.details.finishTime.split(".")[1]}</div>
+        </div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', width: '10%' }}>
-        <div>{props.details.times.quarterMile || ""}</div>
-        <div>{props.details.times.halfMile}</div>
-        <div>{props.details.times.thirdQuarter}</div>
-        <div>{props.details.times.finish}</div>
+        <div className="d-flex" style={{ width: '20%' }}>
+          {props.details.times.quarterMile.split(".")[0]}<div style={{ fontSize: '10px' }}>{props.details.times.quarterMile.split(".")[1]}</div>
+        </div>
+        <div className="d-flex" style={{ width: '20%' }}>{props.details.times.halfMile.split(".")[0]}<div style={{ fontSize: '10px' }}>{props.details.times.halfMile.split(".")[1]}</div></div>
+        <div className="d-flex" style={{ width: '30%' }}>{props.details.times.thirdQuarter?.split(".")[0]}<div style={{ fontSize: '10px' }}>{props.details.times.thirdQuarter?.split(".")[1]}</div></div>
+        <div className="d-flex" style={{ width: '30%' }}>{props.details.times.finish.split(".")[0]}<div style={{ fontSize: '10px' }}>{props.details.times.finish.split(".")[1]}</div></div>
       </div>
 
-      <div style={{ width: '6%' }}>
+      <div style={{ width: '5%' }}>
         {props.details.claiming}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', width: '15%' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', width: '18%' }}>
         <div style={{ display: 'flex', flexDirection: 'row', width: '20px', justifyContent: 'space-between' }}>
           <div>{props.details.startingPosition}</div>
           <div>{props.details.positions.start}</div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-around', width: '80%' }}>
-          <div style={{ display: 'flex' }}><div>{props.details.positions.quarterMile}</div><div style={{ fontSize: '10px', fontWeight: '600' }}>{props.details.lengths.quarterMile}</div></div>
-          <div style={{ display: 'flex' }}><div>{props.details.positions.halfMile}</div><div style={{ fontSize: '10px', fontWeight: '600' }}>{props.details.lengths.halfMile}</div></div>
-          <div style={{ display: 'flex' }}><div>{props.details.positions.thirdQuarter}</div><div style={{ fontSize: '10px', fontWeight: '600' }}>{props.details.lengths.thirdQuarter}</div></div>
-          <div style={{ display: 'flex' }}><div>{props.details.positions.finish}</div><div style={{ fontSize: '10px', fontWeight: '600' }}>{props.details.lengths.finish}</div></div>
-          <div>
+        <div style={{ display: 'flex', justifyContent: 'space-around', width: '84%' }}>
+          <div style={{ display: 'flex', width: '25px' }}><div>{props.details.positions.quarterMile}</div><div style={{ fontSize: '10px', fontWeight: '600' }}>{props.details.beatenLengths.quarterMile}</div></div>
+          <div style={{ display: 'flex', width: '25px' }}><div>{props.details.positions.halfMile}</div><div style={{ fontSize: '10px', fontWeight: '600' }}>{props.details.beatenLengths.halfMile}</div></div>
+          <div style={{ display: 'flex', width: '25px' }}><div>{props.details.positions.thirdQuarter}</div><div style={{ fontSize: '10px', fontWeight: '600' }}>{props.details.beatenLengths.thirdQuarter}</div></div>
+          <div style={{ display: 'flex', width: '25px' }}><div>{props.details.positions.finish}</div><div style={{ fontSize: '10px', fontWeight: '600' }}>{props.details.beatenLengths.finish}</div></div>
+          <div style={{ width: '72px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             {
               props.details.raceUrl && (
                 <div>
                   <IconButton aria-describedby={id} onClick={(e) => setState({ anchorEl: e.currentTarget, full: true })} style={{ padding: 0, height: "20px" }} size="small"><VideocamOutlinedIcon /> </IconButton>
                   <IconButton aria-describedby={id} onClick={(e) => setState({ anchorEl: e.currentTarget, full: false })} style={{ padding: 0, height: "20px" }} size="small"><FastForwardIcon /> </IconButton>
-                  <Popover
-                    id={id}
-                    open={open}
-                    anchorEl={state.anchorEl}
+               
+                  <ModalVideo channel='youtube' youtube={{ autoplay: 1, mute: 1, start: state.full ? props.details.raceUrl.split("=")[1] : props.details.finalStraightUrl.split("=")[1] }} isOpen={open}
+                    videoId={getVideoId(props.details.raceUrl) }
                     onClose={handleClose}
-                    anchorOrigin={{
-                      vertical: 'bottom',
-                      horizontal: 'center',
-                    }}
-                    transformOrigin={{
-                      vertical: 'top',
-                      horizontal: 'center',
-                    }}
-                    disableRestoreFocus
-                    modal="true"
-                    elevation={20}
                   >
-                    <Typography style={{ padding: 2 }}>
-                      <iframe width="853" height="480" title="myframe" src={state.full ? props.details.raceUrl : props.details.finalStraightUrl} frameBorder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
-                    </Typography>
-                  </Popover>
+                  </ModalVideo>
                 </div>
 
               )
             }
+            <div>
+              {
+                props.details.comments && (
+                  <div
+                    aria-owns={openComments ? 'mouse-over-popover-comments' : undefined}
+                    aria-haspopup="true"
+                    onMouseEnter={handlePopoverOpen}
+                    onMouseLeave={handlePopoverClose}
+                    style={{ display: 'flex', width: '20px' }}
+                  >
+                    <i className="pi pi-comment" />
+                  </div>
+                )
+              }
+              <Popover
+                id="mouse-over-popover-comments"
+                className={classes.popover}
+                classes={{
+                  paper: classes.paper,
+                }}
+                modal="true"
+                elevation={20}
+                open={openComments}
+                anchorEl={commentsAnchorEl}
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'left',
+                }}
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'left',
+                }}
+                onClose={handlePopoverClose}
+                disableRestoreFocus
+              >
+                <div>{props.details.comments}</div>
+              </Popover>
+            </div>
           </div>
         </div>
       </div>

@@ -5,7 +5,7 @@ import "./AddHorseDialogPrime.css";
 import Backdrop from "../Backdrop/Backdrop";
 import Spinner from "../Spinner/Spinner";
 import { AuthContext } from "../../context/auth-context";
-import FreeSoloCreateOptionDialog from './test';
+import FreeSoloCreateOptionDialog from './FreeSoloCreateOptionDialog';
 import { loadHorses, saveJockey, saveStable, saveTrainer } from '../../services/Services';
 import HorseLoader from "../HorseLoader";
 
@@ -23,7 +23,6 @@ import {
   InputLabel,
   DialogContent,
   DialogActions,
-  TextField,
   Button,
   Select,
   MenuItem,
@@ -31,6 +30,12 @@ import {
   makeStyles,
   IconButton
 } from '@material-ui/core';
+
+import {
+  Autocomplete,
+  NativeSelect,
+  TextField
+} from '@mui/material';
 
 
 const useStyles = makeStyles((theme) => ({
@@ -49,7 +54,7 @@ const AddHorseDialogPrime = (props) => {
   const [createJockey, setCreateJockey] = useState({ visible: false });
 
   let horsesLoaded = useRef([])
-  let horseObject = useRef({});
+  let horseObject = useRef();
   const classes = useStyles();
   const toast = useRef(null);
   const authContext = useContext(AuthContext);
@@ -74,7 +79,7 @@ const AddHorseDialogPrime = (props) => {
     discarded: false,
     distance: raceSelected.distance,
     horseAge: 0,
-    horseEquipments: ["E", "F"],
+    horseEquipments: ["e", "f"],
     horseMedications: ["B"],
     horseWeight: 0,
     jockey: "",
@@ -88,7 +93,7 @@ const AddHorseDialogPrime = (props) => {
     finishTime: '0'
   });
 
-  const [horse, setHorse] = React.useState({ name: "", age: 2, color: "Z", sex: "M", stable: "", sire: "", dam: "", weight: "", procedence: "native" });
+  const [horse, setHorse] = React.useState({ name: "", age: 2, color: "Z", sex: "M", stable: "", sire: "", dam: "", weight: "", procedence: "N" });
 
   const stables = authContext.stables.map(stable => {
     return { name: stable.name, value: stable._id }
@@ -111,7 +116,7 @@ const AddHorseDialogPrime = (props) => {
   }
 
   function clearValues() {
-    setHorse({ name: "", age: 2, color: "Z", sex: "M", stable: "", sire: "", dam: "", weight: "", procedence: "native" });
+    setHorse({ name: "", age: 2, color: "Z", sex: "M", stable: "", sire: "", dam: "", weight: "", procedence: "N" });
     setHorseRaceDetail(prevState => (
       {
         claiming: "",
@@ -120,7 +125,7 @@ const AddHorseDialogPrime = (props) => {
         distance: raceSelected.distance,
         finishTime: "0",
         horseAge: 0,
-        horseEquipments: ["E", "F"],
+        horseEquipments: ["e", "f"],
         horseMedications: ["B"],
         horseWeight: "",
         jockey: "",
@@ -139,6 +144,11 @@ const AddHorseDialogPrime = (props) => {
 
   function handleAdd() {
     setLoading(true);
+    if (!selectedHorse._id) {
+      setLoading(true);
+      alert('error no horse id');
+      return;
+    }
     const requestBody = {
       query: `
         mutation CreateHorseRaceDetail($horseRaceDetail: HorseRaceDetailInput, $horseId: ID){
@@ -170,6 +180,9 @@ const AddHorseDialogPrime = (props) => {
 
         onHorseAdded(props.index, raceSelected._id, selectedHorse).then((data) => {
           setLoading(false);
+          if (!!horseObject.current) {
+            horseObject.current.continue = true;
+          }
           clearValues();
           toast.current.show({ severity: 'success', summary: 'Horse added', detail: 'Horse added to race', life: 3000 });
         })
@@ -186,14 +199,16 @@ const AddHorseDialogPrime = (props) => {
     if (!horse) {
       return
     }
-    if (horseObject.current) {
+    if (!!horseObject.current) {
       horseObject.current._id = horse._id;
       horseObject.current.age = horse.age;
       horseObject.current.name = horse.name;
+      setSelectedHorse({ ...horseObject.current });
+      setCreateHorse({ visible: false });
       verifyStable();
     }
     else {
-      var eqp = ["E", "F"];
+      var eqp = ["e", "f"];
       var medic = ["B"];
       var jockey = ""
       var jockeySelected = { name: '', value: '' }
@@ -246,6 +261,7 @@ const AddHorseDialogPrime = (props) => {
 
   async function savedStable(name) {
     setLoading(true);
+    setCreateStable({ visible: false });
     const stable = await saveStable(name)
     setLoading(false);
     if (stable) {
@@ -264,6 +280,7 @@ const AddHorseDialogPrime = (props) => {
 
   async function savedJockey(name) {
     setLoading(true);
+    setCreateJockey({ visible: false });
     const jockey = await saveJockey(name)
     setLoading(false);
     if (jockey) {
@@ -281,6 +298,7 @@ const AddHorseDialogPrime = (props) => {
 
   async function savedTrainer(name) {
     setLoading(true);
+    setCreateTrainer({ visible: false })
     const trainer = await saveTrainer(name)
     setLoading(false);
     if (trainer) {
@@ -308,15 +326,15 @@ const AddHorseDialogPrime = (props) => {
   };
 
   useEffect(() => {
-
-    if (horseObject.current.saveHorse) {
+    if (horseObject.current && horseObject.current.saveHorse) {
       horseObject.current.saveHorse = false;
+      horseObject.current.continue = false;
       handleAdd();
     }
-    else if (!!horsesLoaded.current.length) {
+    else if (!!horsesLoaded.current.length && horseObject.current.continue) {
       saveFileHorses();
     }
-  }, [selectedHorse.continue])
+  }, [horseRaceDetail.horseAge])
 
 
   const readExcel = async (file) => {
@@ -346,7 +364,7 @@ const AddHorseDialogPrime = (props) => {
   }
 
   const saveFileHorses = () => {
-    horseObject.current = horsesLoaded.current.splice(0, 1)[0];    
+    horseObject.current = horsesLoaded.current.splice(0, 1)[0];
     loadHorses(horseObject.current.name).then(res => {
       return res.json()
     })
@@ -356,8 +374,8 @@ const AddHorseDialogPrime = (props) => {
           horseObject.current._id = horses[0]._id;
           horseObject.current.age = horses[0].age;
           horseObject.current.name = horses[0].name;
-          setSelectedHorse({ ...horseObject.current })
-          verifyStable()
+          setSelectedHorse({ ...horseObject.current });
+          verifyStable();
         }
         else {
           setCreateHorse({ visible: true, name: horseObject.current.name, weight: horseObject.current.weight });
@@ -418,7 +436,7 @@ const AddHorseDialogPrime = (props) => {
       jockey: horseObject.current.jockey,
       jockeyWeight: horseObject.current.jockeyWeight
     });
-    setSelectedHorse({ ...horseObject.current });
+    //setSelectedHorse({ ...horseObject.current });
   }
 
   return (
@@ -455,6 +473,7 @@ const AddHorseDialogPrime = (props) => {
                     <FormControl>
                       <FreeSoloCreateOptionDialog
                         options={stables}
+                        tabIndex="1"
                         title="Stable"
                         value={autoCompleteValues.stable}
                         onChange={(id, ref) => setHorseRaceDetail({ ...horseRaceDetail, stable: id })}
@@ -474,11 +493,11 @@ const AddHorseDialogPrime = (props) => {
                       />
                     </FormControl>
 
-                    <FormControl>
+                    {/* <FormControl>
                       <FormLabel component="legend">Equipments</FormLabel>
                       <FormGroup style={{ flexDirection: "row" }}>
                         {
-                          ['E', 'F', 'G', 'Gs', 'LA'].map((name) => (
+                          ['E', 'F', 'G', 'GS', 'LA'].map((name) => (
                             <FormControlLabel
                               key={name}
                               label={name}
@@ -492,9 +511,52 @@ const AddHorseDialogPrime = (props) => {
                           ))
                         }
                       </FormGroup>
+                    </FormControl> */}
+
+                    <FormControl sx={{ width: 200 }}>
+                      <Autocomplete
+                        disablePortal
+                        id="combo-box-demo"
+                        autoSelect
+                        onChange={(e, newValue) => setHorseRaceDetail({ ...horseRaceDetail, horseMedications: [newValue] })}
+                        options={['B', 'L,B']}
+                        value={horseRaceDetail.horseMedications.toString()}
+                        renderInput={(params) => <TextField {...params} label="Medications" />}
+                      />
                     </FormControl>
 
                     <FormControl>
+                      <Autocomplete
+                        options={["E", "E,F", "F", "E,F,LA", "E,F,G,LA", "E,F,GS,LA", "F,LA"]}
+                        getOptionLabel={(option) => option}
+                        value={horseRaceDetail.horseEquipments.toString()}
+                        onChange={(e, newValue) => setHorseRaceDetail({ ...horseRaceDetail, horseEquipments: [newValue] })}
+                        id="auto-select"
+                        autoSelect
+                        renderInput={(params) => (
+                          <TextField {...params} label="Equipments" variant="outlined" />
+                        )}
+                      />
+                    </FormControl>
+
+                    {/* <FormControl style={{ margin: 1, minWidth: 120 }}>
+                      <InputLabel htmlFor="medication-outlined-label" >Medications</InputLabel>
+                      <NativeSelect
+
+                        value={horseRaceDetail.horseMedications.toString()}
+                        onChange={e => setHorseRaceDetail({ ...horseRaceDetail, horseMedications: [e.target.value] })}
+
+                        inputProps={{
+                          name: '"Medications"',
+                          id: 'medication-outlined-label',
+                        }}
+                      >
+                        <option value="B">B</option>
+                        <option value="L,B">L,B</option>
+                      </NativeSelect>
+                    </FormControl> */}
+
+                    {/* <FormControl>
                       <FormLabel component="legend">Medications</FormLabel>
                       <FormGroup style={{ flexDirection: "row" }}>
                         <FormControlLabel
@@ -510,7 +572,7 @@ const AddHorseDialogPrime = (props) => {
                           label="B"
                         />
                       </FormGroup>
-                    </FormControl>
+                    </FormControl> */}
 
                     <FormControl>
                       <FreeSoloCreateOptionDialog
@@ -523,34 +585,42 @@ const AddHorseDialogPrime = (props) => {
                       />
                     </FormControl>
 
+
                     <FormControl>
-                      <InputLabel id="claiming-label">Claiming</InputLabel>
-                      <Select
-                        labelId="claiming-label"
-                        id="claiming"
-                        value={horseRaceDetail.claiming}
-                        onChange={e => setHorseRaceDetail({ ...horseRaceDetail, "claiming": e.target.value })}
-                        label="Claiming"
-                      >
-                        {
-                          claimings.map((claim, index) => {
-                            return <MenuItem key={index} value={claim.value}>{claim.label}</MenuItem>
-                          })
-                        }
-                      </Select>
+                      <TextField name="jockeyweight"
+                        label="Jockey Weight" type="number"
+                        onChange={e => setHorseRaceDetail({ ...horseRaceDetail, "jockeyWeight": Number(e.target.value) })}
+                        keyfilter="pint" value={horseRaceDetail.jockeyWeight}
+                        variant="outlined"
+                      />
                     </FormControl>
 
-                    <TextField name="jockeyweight"
-                      label="Jockey Weight" type="number"
-                      onChange={e => setHorseRaceDetail({ ...horseRaceDetail, "jockeyWeight": Number(e.target.value) })}
-                      keyfilter="pint" value={horseRaceDetail.jockeyWeight}
-                      margin="normal" variant="outlined"
-                    />
+                    <FormControl>
+                      <Autocomplete
+                        options={raceSelected.claimings}
+                        getOptionLabel={(option) => option}
+                        value={horseRaceDetail.claiming || raceSelected.claimings[0]}
+                        onChange={(e, newValue) => setHorseRaceDetail({ ...horseRaceDetail, "claiming": newValue })}
+                        id="claiming-select"
+                        autoSelect
+                        renderInput={(params) => (
+                          <TextField {...params} label="Claiming" variant="outlined" />
+                        )}
+                      />
+                    </FormControl>
 
-                    <TextField
-                      name="weight" onFocus={(e) => e.target.select()}
-                      label="Weight" type="number" onChange={onHorseWeightChange} keyfilter="pint" value={horseRaceDetail.horseWeight} margin="normal" variant="outlined"
-                    />
+                    <FormControl>
+                      <TextField
+                        name="weight"
+                        onFocus={(e) => e.target.select()}
+                        label="Weight"
+                        type="number"
+                        onChange={onHorseWeightChange}
+                        keyfilter="pint"
+                        value={horseRaceDetail.horseWeight}
+                        variant="outlined"
+                      />
+                    </FormControl>
 
                     <FormControlLabel
                       control={<Checkbox checked={horseRaceDetail.discarded} onChange={e => setHorseRaceDetail({ ...horseRaceDetail, discarded: e.target.checked })} value="true" />}
@@ -571,7 +641,7 @@ const AddHorseDialogPrime = (props) => {
           </Button>
           <Button disabled={!raceSelected._id} onClick={handleAdd} color="primary">
             Add
-        </Button>
+          </Button>
         </DialogActions>
       </Dialog>
 

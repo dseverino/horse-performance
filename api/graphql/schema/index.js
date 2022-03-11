@@ -109,7 +109,8 @@ module.exports = buildSchema(`
     trackCondition: String
     distance: Int
     positions: Position
-    lengths: Length
+    byLengths: Length
+    beatenLengths: Length
     bet: String
     trainingTimes: [TrainingTime]
     horseWeight: Int        
@@ -249,8 +250,9 @@ module.exports = buildSchema(`
     jockeyChanged: Boolean
     trainer: ID
     stable: ID
-    startingPosition: Int    
-    lengths: LengthInput
+    startingPosition: Int
+    byLengths: LengthInput
+    beatenLengths: LengthInput
     times: TimeInput
     finishTime: String
     trainingTimes: [TrainingTimeInput] 
@@ -351,6 +353,7 @@ module.exports = buildSchema(`
     createJockey(jockeyInput: JockeyInput): Jockey
     createProgram(programInput: ProgramInput): Program!
     createRace(raceInput: RaceInput): Race!
+    createRaceList(raceInput: [RaceInput]): [Race]!
     createUser(userInput: UserInput) : User    
     deleteRace(raceId: String): Race!    
     updateHorseRaceDetail(selectedHorse: SelectedHorse): HorseRaceDetail

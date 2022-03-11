@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useContext, useEffect, useState } from "react";
 
 import Spinner from "../../components/Spinner/Spinner";
 
@@ -26,10 +26,24 @@ import RaceDetailsDialog from "../../components/Dialogs/RaceDetailsDialog";
 import HorseRaceDetailsDialog from "../../components/Dialogs/HorseRaceDetailsDialog";
 import { loadRace } from "../../services/Services";
 
-class Races extends Component {
-  static contextType = AuthContext;
+const Races = ({ history }) => {
 
-  state = {
+  const context = useContext(AuthContext)
+
+  let events = [
+    "1ra Carrera",
+    "2da Carrera",
+    "3ra Carrera",
+    "4ta Carrera",
+    "5ta Carrera",
+    "6ta Carrera",
+    "7ma Carrera",
+    "8va Carrera",
+    "9na Carrera",
+    "10ma Carrera",
+  ]
+
+  const [state, setState] = useState({
     isLoading: false,
     programDate: "",
     selectedRace: 0,
@@ -44,51 +58,42 @@ class Races extends Component {
     displayDialog: false,
     displayRaceDetailsDialog: false,
     displayHorseRaceDetailsDialog: false
-  }
+  })
 
 
-
-  async componentDidMount() {
-    const [jockeys, stables, trainers] = await Promise.all([
-      this.fetchJockeys(),
-      this.fetchStables(),
-      this.fetchTrainers()
+  useEffect(() => {
+    Promise.all([
+      fetchJockeys(),
+      fetchStables(),
+      fetchTrainers()
     ])
+    .then(data => {
+      const [jockeys, stables, trainers] = data
+      context.setList({ ...jockeys, ...stables, ...trainers });
+    })
     //console.log({jockeys, stables, trainers})
 
     //console.log(jockeys, stables, trainers)
-    this.context.setList({ ...jockeys, ...stables, ...trainers });
+    //context.setList({ ...jockeys, ...stables, ...trainers });
 
-    this.events = [
-      "1ra Carrera",
-      "2da Carrera",
-      "3ra Carrera",
-      "4ta Carrera",
-      "5ta Carrera",
-      "6ta Carrera",
-      "7ma Carrera",
-      "8va Carrera",
-      "9na Carrera",
-      "10ma Carrera",
-    ]
+  
+  }, [])
 
-    // this.dialogMap = {
-    //   "horse": <CreateHorseDialog open={true} close={this.closeDialog} key={0} addDialog={this.addDialog} stables={this.state.stables} />,
-    //   "stable": <CreateStableDialog close={this.closeDialog} load={(bool) => this.setState({ isLoading: bool })} savedStable={(stable) => this.setState({ stables: [...this.state.stables, stable] })} key={1} addDialog={this.addDialog} />,
-    //   //"addHorse": <AddHorseDialog close={this.closeDialog} key={0} addDialog={this.addDialog} stables={this.state.stables} />,
-    // }
-    //this.setState({ races: [], programDate: "2020-01-11T04:00:00.000Z", isLoading: true, selectedRace: 0 }, () => this.loadProgramRaces());
+  useEffect(() => {
+    if(state.programDate){
+      loadProgramRaces();
+    }
+  }, [state.programDate])
+
+  const handleChange = (event, newValue) => {
+    setState({ ...state, selectedRace: newValue })
   }
 
-  handleChange = (event, newValue) => {
-    this.setState({ selectedRace: newValue })
+  const onProgramDateChange = (e) => {
+    setState({ ...state, races: [], programDate: e.value, isLoading: true, selectedRace: 0 });
   }
 
-  onProgramDateChange = (e) => {
-    this.setState({ races: [], programDate: e.value, isLoading: true, selectedRace: 0 }, () => this.loadProgramRaces());
-  }
-
-  fetchJockeys = () => {
+  const fetchJockeys = async () => {
     //setLoading(true);
     const requestBody = {
       query: `
@@ -101,31 +106,25 @@ class Races extends Component {
       `
     }
 
-    return fetch("api/graphql", {
-      method: 'POST',
-      body: JSON.stringify(requestBody),
-      headers: {
-        "Content-Type": "application/json"
-      }
-    })
-      .then(result => {
-        if (result.status !== 200 && result.status !== 201) {
-          throw new Error("Failed")
+    try {
+      const result = await fetch("api/graphql", {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+        headers: {
+          "Content-Type": "application/json"
         }
-        return result.json()
-      })
-      .then(resData => {
-        return resData.data
-        //xthis.context.
-        //this.setState({ jockeys: resData.data.jockeys })
-      })
-      .catch(error => {
-        console.log(error)
-        //this.setState({ isLoading: false });
-      })
+      });
+      if (result.status !== 200 && result.status !== 201) {
+        throw new Error("Failed");
+      }
+      const resData = await result.json();
+      return resData.data;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
-  fetchStables = () => {
+  const fetchStables = async () => {
     //setLoading(true);
     const requestBody = {
       query: `
@@ -138,30 +137,25 @@ class Races extends Component {
       `
     }
 
-    return fetch("api/graphql", {
-      method: 'POST',
-      body: JSON.stringify(requestBody),
-      headers: {
-        "Content-Type": "application/json"
-      }
-    })
-      .then(result => {
-        if (result.status !== 200 && result.status !== 201) {
-          throw new Error("Failed")
+    try {
+      const result = await fetch("api/graphql", {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+        headers: {
+          "Content-Type": "application/json"
         }
-        return result.json()
-      })
-      .then(resData => {
-        return resData.data
-        //this.setState({ stables: resData.data.stables })
-      })
-      .catch(error => {
-        console.log(error)
-        //this.setState({ isLoading: false });
-      })
+      });
+      if (result.status !== 200 && result.status !== 201) {
+        throw new Error("Failed");
+      }
+      const resData = await result.json();
+      return resData.data;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
-  fetchTrainers = () => {
+  const fetchTrainers = async () => {
     //setLoading(true);
     const requestBody = {
       query: `
@@ -174,35 +168,30 @@ class Races extends Component {
       `
     }
 
-    return fetch("api/graphql", {
-      method: 'POST',
-      body: JSON.stringify(requestBody),
-      headers: {
-        "Content-Type": "application/json"
-      }
-    })
-      .then(result => {
-        if (result.status !== 200 && result.status !== 201) {
-          throw new Error("Failed")
+    try {
+      const result = await fetch("api/graphql", {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+        headers: {
+          "Content-Type": "application/json"
         }
-        return result.json()
-      })
-      .then(resData => {
-        return resData.data
-        //this.setState({ trainers: resData.data.trainers })
-      })
-      .catch(error => {
-        console.log(error)
-        //this.setState({ isLoading: false });
-      })
+      });
+      if (result.status !== 200 && result.status !== 201) {
+        throw new Error("Failed");
+      }
+      const resData = await result.json();
+      return resData.data;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
-  loading = (value) => {
-    this.setState({ isLoading: value })
+  const loading = (value) => {
+    setState({ ...state, isLoading: value })
   }
 
-  loadProgramRaces = () => {
-    this.setState({ isLoading: true });
+  const loadProgramRaces = () => {
+    setState({ ...state, isLoading: true });
     const requestBody = {
       query: `
         query SingleProgram($date: String!) {
@@ -300,7 +289,14 @@ class Races extends Component {
                     mile
                     finish
                   }
-                  lengths{
+                  byLengths{
+                    quarterMile
+                    halfMile
+                    thirdQuarter
+                    mile
+                    finish
+                  }
+                  beatenLengths{
                     quarterMile
                     halfMile
                     thirdQuarter
@@ -333,7 +329,7 @@ class Races extends Component {
         }
       `,
       variables: {
-        date: this.state.programDate
+        date: state.programDate
       }
     }
     fetch("api/graphql", {
@@ -351,11 +347,11 @@ class Races extends Component {
       })
       .then(resData => {
         if (resData && resData.data.singleProgram) {
-          this.setState({ races: resData.data.singleProgram.races, exist: true, isLoading: false });
+          resData.data.singleProgram.races ? setState({ ...state, races: resData.data.singleProgram.races, exist: true, isLoading: false }) : setTimeout(() => history.push("/createprogram"), 500)
         }
         else {
-          //this.setState({ isLoading: false });
-          this.props.history.push("/createprogram")
+          //setState({ ...state, isLoading: false });
+          setTimeout(() => history.push("/createprogram"), 500)
         }
       })
       .catch(error => {
@@ -363,8 +359,8 @@ class Races extends Component {
       })
   }
 
-  addHorseToRace = async (raceIndex, raceId, selectedHorse) => {
-    this.setState({ isLoading: true });
+  const addHorseToRace = async (raceIndex, raceId, selectedHorse) => {
+    setState({ ...state, isLoading: true });
     const requestBody = {
       query: `
         mutation AddHorse($raceId: ID, $horseId: ID) {
@@ -443,7 +439,14 @@ class Races extends Component {
                   mile
                   finish
                 }
-                lengths{
+                byLengths{
+                  quarterMile
+                  halfMile
+                  thirdQuarter
+                  mile
+                  finish
+                }
+                beatenLengths{
                   quarterMile
                   halfMile
                   thirdQuarter
@@ -493,175 +496,172 @@ class Races extends Component {
         return result.json()
       })
       .then(resData => {
-        this.setState((prevState) => {
+        setState((prevState) => {
           const races = prevState.races;
           races[raceIndex] = resData.data.addHorse;
           return { ...prevState, races: races, isLoading: false }
         })
-        this.setState({ isLoading: false })
+        setState({ ...state, isLoading: false })
         window.scrollTo(0, document.body.scrollHeight);
         return resData
       })
       .catch(error => {
         console.log(error)
-        this.setState({ isLoading: false });
+        setState({ ...state, isLoading: false });
       })
   }
 
-  hasRaceDetails = (raceIndex) => {
-    this.setState((prevState) => {
+  const hasRaceDetails = (raceIndex) => {
+    setState((prevState) => {
       const races = prevState.races;
       races[raceIndex]['hasRaceDetails'] = true;
       return { ...prevState, races: races, isLoading: false }
     })
   }
 
-  testButton = () => {
+  const testButton = () => {
 
-    this.setState({ showDialogOb: { ...this.state.showDialogOb, "horse": this.dialogMap["horse"] } })
+    setState({ ...state, showDialogOb: { ...state.showDialogOb, "horse": dialogMap["horse"] } })
 
   }
 
-  closeDialog = (name) => {
-    this.setState({ showDialogOb: { ...this.state.showDialogOb, [name]: null } })
+  const closeDialog = (name) => {
+    setState({ ...state, showDialogOb: { ...state.showDialogOb, [name]: null } })
   }
 
-  addDialog = (name) => {
+  const addDialog = (name) => {
 
-    this.setState({ showDialogOb: { ...this.state.showDialogOb, [name]: this.dialogMap[name] } })
+    setState({ ...state, showDialogOb: { ...state.showDialogOb, [name]: dialogMap[name] } })
   }
 
-  onOpenAddDialog = (race) => {
-    this.setState({ displayDialog: true, currentRaceSelected: race })
+  const onOpenAddDialog = (race) => {
+    setState({ ...state, displayDialog: true, currentRaceSelected: race })
   }
 
-  loadRaceHandler = async (id, event) => {
+  const loadRaceHandler = async (id, event) => {
     const race = await loadRace(id);
-    this.state.races.splice(event - 1, 1, race)
-    this.setState({ races: this.state.races })
-    // this.setState(prevState => ({
+    state.races.splice(event - 1, 1, race)
+    setState({ ...state, races: state.races })
+    // setState(prevState => ({
     //   races: prevState.races.splice((event), 1, race)
-    // }), () => console.log(this.state.races))
+    // }), () => console.log(state.races))
   }
 
-
-  render() {
-    const tabs = this.state.races.map(race => {
-      return (
-        <Tab key={race._id} label={this.events[race.event - 1]} />
-      )
-    })
-    const RaceTabPanels = this.state.races.map((race, index) => {
-      return (
-        <RaceTabPanel
-          loadProgramRaces={this.loadProgramRaces}
-          hasRaceDetails={this.hasRaceDetails}
-          loading={this.loading}
-          horses={this.state.horses}
-          loadHorses={(horses) => this.setState({ horses: horses })}
-          programDate={this.state.programDate}
-          horseaddedtorace={this.addHorseToRace}
-          key={race._id}
-          race={race}
-          value={this.state.selectedRace}
-          index={index}
-          openAddDialog={this.onOpenAddDialog}
-          openRaceDetailsDialog={() => this.setState({ displayRaceDetailsDialog: true, currentRaceSelected: race })}
-          openHorseRaceDetails={() => this.setState({ displayHorseRaceDetailsDialog: true, currentRaceSelected: race })}
-        //addHorseDialog={this.addDialog}
-        />
-      )
-    });
-
+  const tabs = state.races.map(race => {
     return (
-      <React.Fragment>
-        <div>
-          <div className="col-md-3 mb-3">
-            <Calendar style={{ height: "50px", borderRadius: "20px" }} readOnlyInput={true}
-              dateFormat="dd/mm/yy"
-              showIcon
-              id="date"
-              value={this.state.programDate}
-              onChange={this.onProgramDateChange}
-            />
-          </div>
+      <Tab key={race._id} label={events[race.event - 1]} />
+    )
+  })
+  const RaceTabPanels = state.races.map((race, index) => {
+    return (
+      <RaceTabPanel
+        loadProgramRaces={loadProgramRaces}
+        hasRaceDetails={hasRaceDetails}
+        loading={loading}
+        horses={state.horses}
+        loadHorses={(horses) => setState({ ...state, horses: horses })}
+        programDate={state.programDate}
+        horseaddedtorace={addHorseToRace}
+        key={race._id}
+        race={race}
+        value={state.selectedRace}
+        index={index}
+        openAddDialog={onOpenAddDialog}
+        openRaceDetailsDialog={() => setState({ ...state, displayRaceDetailsDialog: true, currentRaceSelected: race })}
+        openHorseRaceDetails={() => setState({ ...state, displayHorseRaceDetailsDialog: true, currentRaceSelected: race })}
+      //addHorseDialog={addDialog}
+      />
+    )
+  });
+
+  return (
+    <React.Fragment>
+      <div>
+        <div className="col-md-3 mb-3">
+          <Calendar style={{ height: "50px", borderRadius: "20px" }} readOnlyInput={true}
+            dateFormat="dd/mm/yy"
+            showIcon
+            id="date"
+            value={state.programDate}
+            onChange={onProgramDateChange}
+          />
         </div>
-        {
-          this.state.races.length > 0 && (
-            <React.Fragment>
-              <Paper style={{ flexGrow: 1 }}>
-                <Tabs value={this.state.selectedRace} onChange={this.handleChange} indicatorColor="primary" textColor="primary" >
-                  {tabs}
-                </Tabs>
-              </Paper>
-              {RaceTabPanels}
-            </React.Fragment>
-          )
-        }
-
-        {
-          this.state.isLoading &&
+      </div>
+      {
+        state.races.length > 0 && (
           <React.Fragment>
-            <Backdrop />
-            <Spinner />
+            <Paper style={{ flexGrow: 1 }}>
+              <Tabs value={state.selectedRace} onChange={handleChange} indicatorColor="primary" textColor="primary" >
+                {tabs}
+              </Tabs>
+            </Paper>
+            {RaceTabPanels}
           </React.Fragment>
-        }
+        )
+      }
 
-        <Button onClick={this.testButton}>test</Button>
+      {
+        state.isLoading &&
+        <React.Fragment>
+          <Backdrop />
+          <Spinner />
+        </React.Fragment>
+      }
 
-        {/* <MainDialog id="mainDialog">
-          {Object.values(this.state.showDialogOb)}
-        </MainDialog> */}
+      <Button onClick={testButton}>test</Button>
 
-        {
-          this.state.displayDialog && (
-            <AddHorseDialogPrime
-              id="add-horse"
-              visible={this.state.displayDialog}
-              keepMounted
-              onHide={() => this.setState({ displayBasic: false })}
-              header="Add Horse"
-              date={this.state.programDate}
-              raceSelected={this.state.currentRaceSelected}
-              onHorseAdded={this.addHorseToRace}
-              onClose={() => this.setState({ displayDialog: false })}
-              index={this.state.selectedRace}
-            />
-          )
-        }
+      {/* <MainDialog id="mainDialog">
+        {Object.values(state.showDialogOb)}
+      </MainDialog> */}
 
-        {
-          this.state.displayRaceDetailsDialog && (
-            <RaceDetailsDialog
-              index={this.state.selectedRace}
-              hasRaceDetails={this.hasRaceDetails}
-              loading={() => this.setState({ isLoading: true })}
-              visible={this.state.displayRaceDetailsDialog}
-              date={this.state.programDate}
-              raceSelected={this.state.currentRaceSelected}
-              onClose={() => this.setState({ displayRaceDetailsDialog: false })}
-              loadRace={this.loadRaceHandler}
-            />
-          )
-        }
+      {
+        state.displayDialog && (
+          <AddHorseDialogPrime
+            id="add-horse"
+            visible={state.displayDialog}
+            keepMounted
+            onHide={() => setState({ ...state, displayBasic: false })}
+            header="Add Horse"
+            date={state.programDate}
+            raceSelected={state.currentRaceSelected}
+            onHorseAdded={addHorseToRace}
+            onClose={() => setState({ ...state, displayDialog: false })}
+            index={state.selectedRace}
+          />
+        )
+      }
 
-        {
-          this.state.displayHorseRaceDetailsDialog && (
-            <HorseRaceDetailsDialog
-              visible={this.state.displayHorseRaceDetailsDialog}
-              onClose={() => this.setState({ displayHorseRaceDetailsDialog: false })}
-              raceSelected={this.state.currentRaceSelected}
-              header="Horse Race Details"
-              loading={(load) => this.setState({ isLoading: load })}
-              date={this.state.programDate}
-              loadRace={this.loadRaceHandler}
-            />
-          )
-        }
+      {
+        state.displayRaceDetailsDialog && (
+          <RaceDetailsDialog
+            index={state.selectedRace}
+            hasRaceDetails={hasRaceDetails}
+            loading={() => setState({ ...state, isLoading: true })}
+            visible={state.displayRaceDetailsDialog}
+            date={state.programDate}
+            raceSelected={state.currentRaceSelected}
+            onClose={() => setState({ ...state, displayRaceDetailsDialog: false })}
+            loadRace={loadRaceHandler}
+          />
+        )
+      }
 
-      </React.Fragment>
-    );
-  }
+      {
+        state.displayHorseRaceDetailsDialog && (
+          <HorseRaceDetailsDialog
+            visible={state.displayHorseRaceDetailsDialog}
+            onClose={() => setState({ ...state, displayHorseRaceDetailsDialog: false })}
+            raceSelected={state.currentRaceSelected}
+            header="Horse Race Details"
+            loading={(load) => setState({ ...state, isLoading: load })}
+            date={state.programDate}
+            loadRace={loadRaceHandler}
+          />
+        )
+      }
+
+    </React.Fragment>
+  )
 }
 
 export default Races

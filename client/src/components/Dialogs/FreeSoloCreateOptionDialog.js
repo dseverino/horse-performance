@@ -17,7 +17,7 @@ export default function FreeSoloCreateOptionDialog(props) {
 
   useEffect(() => {    
     if (props.create?.visible) {
-      setDialogValue({ ...dialogValue, name: props.create.name })
+      setDialogValue({ ...dialogValue, name: props.create.name.toLowerCase() })
       toggleOpen(true);
     }
   }, [props.create])
@@ -37,12 +37,11 @@ export default function FreeSoloCreateOptionDialog(props) {
   const handleSubmit = (event) => {
     event.preventDefault();
     const name = dialogValue.name.replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase());
+    handleClose();
     props.onCreate(name)
     setValue({
       name: name
-    });
-
-    handleClose();
+    });    
   };
 
   
@@ -56,6 +55,8 @@ export default function FreeSoloCreateOptionDialog(props) {
       <Autocomplete
         value={value}
         disabled={props.disabled}
+        freeSolo
+        
         onChange={(event, newValue) => {
           if (typeof newValue === 'string') {
             // timeout to avoid instant validation of the dialog's form.
@@ -97,11 +98,9 @@ export default function FreeSoloCreateOptionDialog(props) {
           }
           return option.name;
         }}
-        selectOnFocus
-        clearOnBlur
-
+        
         renderOption={(option) => option.name}
-        freeSolo
+        
 
         onFocus={(e) => e.target.select()}
         renderInput={(params) => (

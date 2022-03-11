@@ -31,7 +31,7 @@ export default function MouseOverPopover(props) {
       if (!props.posObject[key]) {
         return <div key={index}></div>
       }
-      return <div style={{display: 'flex', justifyContent: "space-between", width: '300px'}} key={key}><div>{props.posObject[key].name}</div><div>{props.posObject[key].by}</div></div>
+      return <div style={{display: 'flex', justifyContent: "space-between", width: '300px'}} key={key}><div>{index + 1} {props.posObject[key].name}</div><div>{props.posObject[key].by}</div></div>
 
     })
   }

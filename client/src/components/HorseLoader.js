@@ -24,7 +24,7 @@ import { Dialog } from 'primereact/dialog';
 
 import { loadHorses, saveStable, saveHorse } from '../services/Services';
 import { AuthContext } from '../context/auth-context';
-import FreeSoloCreateOptionDialog from './Dialogs/test';
+import FreeSoloCreateOptionDialog from './Dialogs/FreeSoloCreateOptionDialog';
 
 const filter = createFilterOptions();
 const useStyles = makeStyles((theme) => ({
@@ -50,7 +50,7 @@ const HorseLoader = (props) => {
     name: '',
     color: 'A',
     age: 3,
-    procedence: 'native',
+    procedence: 'N',
     sex: 'M',
     stable: '',
     sire: '',
@@ -66,7 +66,7 @@ const HorseLoader = (props) => {
       name: '',
       color: 'A',
       age: 3,
-      procedence: 'native',
+      procedence: 'N',
       sex: 'M',
       stable: '',
       sire: '',
@@ -90,7 +90,7 @@ const HorseLoader = (props) => {
   useEffect(() => {
     let active = true;
 
-    if (!horse || horse.name.length != 4) {      
+    if (!horse || horse.name.length != 4) {
       return undefined;
     }
 
@@ -113,6 +113,13 @@ const HorseLoader = (props) => {
       setOptions([]);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (props.createHorse.visible) {
+      setDialogValue({ ...dialogValue, name: props.createHorse.name.toLowerCase(), weight: props.createHorse.weight });
+      toggleOpen(true);
+    }
+  }, [props.createHorse.visible])
 
   async function savedStable(name) {
     props.load(true);
@@ -173,7 +180,7 @@ const HorseLoader = (props) => {
         options={options}
         loading={loading}
         freeSolo
-        selectOnFocus
+        autoSelect
         filterOptions={(options, params) => {
           const filtered = filter(options, params);
 
@@ -260,18 +267,16 @@ const HorseLoader = (props) => {
             </FormControl>
 
             <FormControl>
-              <InputLabel id="sex-label">Sex</InputLabel>
+              <InputLabel>Sex</InputLabel>
               <Select
-                labelId="sex-label"
-                id="sex"
-
+                native             
                 value={dialogValue.sex}
                 onChange={e => setDialogValue({ ...dialogValue, sex: e.target.value })}
-                label="Sex"
+                input={<Input id="sex-select-native" />}
               >
-                <MenuItem value="M">M</MenuItem>
-                <MenuItem value="Mc">Mc</MenuItem>
-                <MenuItem value="H">H</MenuItem>
+                {
+                  ['M', 'Mc', 'H'].map((col) => <option key={col} value={col} >{col}</option>)
+                }
               </Select>
             </FormControl>
 
@@ -289,6 +294,7 @@ const HorseLoader = (props) => {
             <TextField label="Sire" name="sire" onChange={e => setDialogValue({ ...dialogValue, sire: e.target.value })} value={dialogValue.sire} margin="normal" margin="dense" />
 
             <TextField label="Dam" name="dam" onChange={e => setDialogValue({ ...dialogValue, dam: e.target.value })} value={dialogValue.dam} margin="normal" margin="dense" />
+            
             <FormControl>
               <FreeSoloCreateOptionDialog
                 options={stables}
@@ -299,6 +305,7 @@ const HorseLoader = (props) => {
                 variant='standard'
               />
             </FormControl>
+            
             <FormControl>
               <RadioGroup
                 row
@@ -308,12 +315,12 @@ const HorseLoader = (props) => {
                 onChange={(e) => setDialogValue({ ...dialogValue, procedence: e.target.value })}
               >
                 <FormControlLabel
-                  value="native"
+                  value="N"
                   control={<Radio size="small" color="primary" />}
                   label="Native"
                 />
                 <FormControlLabel
-                  value="imported"
+                  value="I"
                   control={<Radio size="small" color="primary" />}
                   label="Imported"
                 />

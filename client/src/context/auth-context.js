@@ -4,7 +4,11 @@ export const AuthContext = React.createContext({
   token: null,
   userId: null,
   login: (userId, token, tokenExpiration) => { },
-  logout: () => { }
+  logout: () => { },
+  addTrainer: () => {},
+  jockeys: [],
+  stables: [],
+  trainers: []
 })
 
 const listReducer = (state, action) => {

@@ -13,7 +13,8 @@ module.exports = {
       }
       //Race.deleteMany().then()
       const races = await Race.find();
-
+ 
+      
       return races.map(race => {
         return transformRace(race)
       })
@@ -46,6 +47,29 @@ module.exports = {
       throw err
     }
   },
+
+  createRaceList: async (args, req) => {
+    /*if (!req.loggedIn) {
+      throw new Error("User not authenticated!")
+    }*/
+    try {
+      const racesSaved = await Race.insertMany(args.raceInput)
+      if (racesSaved) {
+        const raceList = racesSaved.map((it) => it._id)
+        try {
+          await Program.updateOne({ _id: args.raceInput[0].programId }, { $push: { races: { $each: raceList }} });
+        } catch (error) {
+          throw error
+        }
+      }
+      console.log(racesSaved)
+      return racesSaved
+    }
+    catch (err) {
+      throw err
+    }
+  },
+
   completeRace: async (args) => {
     try {
       const race = await Race.findById(args.raceId)

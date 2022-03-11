@@ -1,8 +1,7 @@
-.details-form > *{
-  margin: 1em;
-  width: 25ch !important;
-}
+
 
 .details-form {
   max-width: 520px;
+  display: flex;
+  flex-direction: column;
 }

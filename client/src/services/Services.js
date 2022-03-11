@@ -152,6 +152,28 @@ export const saveJockey = (name) => {
       jockey: { name }
     }
   }
+}
+
+export const saveRaces = (racesList) => {
+  const requestBody = {
+    query: `
+      mutation CreateRaceList($races: [RaceInput]) {
+        createRaceList(raceInput: $races) {
+          programId
+          event
+          distance
+          claimings
+          procedences
+          horseAge
+          spec
+          purse
+        }
+      }
+      `,
+    variables: {
+      races: racesList
+    }
+  }
 
 
 
@@ -169,7 +191,7 @@ export const saveJockey = (name) => {
       return result.json()
     })
     .then(resData => {
-      return resData.data.createJockey
+      return resData.data.createRaceList
     })
     .catch(error => {
       console.log(error);
@@ -205,7 +227,7 @@ export const saveTrainer = name => {
       return result.json()
     })
     .then(resData => {
-      return resData.data.CreateTrainer;
+      return resData.data.createTrainer;
     })
     .catch(error => {
       console.log(error);
@@ -309,7 +331,14 @@ export const loadRace = id => {
                 mile
                 finish
               }
-              lengths{
+              byLengths{
+                quarterMile
+                halfMile
+                thirdQuarter
+                mile
+                finish
+              }
+              beatenLengths{
                 quarterMile
                 halfMile
                 thirdQuarter
@@ -351,12 +380,13 @@ export const loadRace = id => {
     headers: {
       "Content-Type": "application/json"
     }
-  }).then(result => {
-    if (result.status !== 200 && result.status !== 201) {
-      throw new Error("Failed")
-    }
-    return result.json()
   })
+    .then(result => {
+      if (result.status !== 200 && result.status !== 201) {
+        throw new Error("Failed")
+      }
+      return result.json()
+    })
     .then(resData => {
       return resData.data.loadRace;
     })

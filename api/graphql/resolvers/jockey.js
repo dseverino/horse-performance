@@ -4,21 +4,25 @@ const { transformJockey } = require("../resolvers/merge")
 module.exports = {
   singleJockey: async (args) => {
     try {
-      
+
       //Horse.remove().then()
       const result = await Jockey.findOne({ name: args.name });
-      
-      if(result){        
+
+      if (result) {
         return transformJockey(result)
-      }            
+      }
     }
     catch (err) {
       throw err
     }
   },
   createJockey: async (args) => {
+    var ob = {};
+    ob[`${new Date().getFullYear()}`] = { 'starts': 0 }
+
     const jockey = new Jockey({
-      name: args.jockeyInput.name
+      name: args.jockeyInput.name,
+      stats: ob
     })
     try {
       const result = await jockey.save()
@@ -37,6 +41,6 @@ module.exports = {
       })
     } catch (error) {
       throw error
-    }   
+    }
   }
 }
